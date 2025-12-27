@@ -1,0 +1,53 @@
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": [
+    "node_modules",
+    "lib/financial/benchmark-analyzer.ts",
+    "lib/financial/consulting-analyzer.ts",
+    "lib/financial/consulting-point-extractor.ts",
+    "lib/financial/extraction-verifier.ts",
+    "lib/financial/narrative-engine.ts",
+    "lib/financial/narrative-templates.ts",
+    "lib/financial/professional-analyzer.ts",
+    "lib/financial/qa-engine.ts",
+    "lib/financial/report-generator.ts",
+    "lib/financial/risk-analyzer.ts",
+    "lib/financial/rule-based-analyzer.ts",
+    "lib/financial/script-generator.ts",
+    "lib/financial/unified-script-generator.ts",
+    "lib/financial/workflow-analyzer.ts",
+    "lib/financial/workflow-personas.ts",
+    "lib/financial/workflow-templates.ts",
+    "lib/financial/__tests__"
+  ]
+}
