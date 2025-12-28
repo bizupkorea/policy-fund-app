@@ -67,6 +67,15 @@ export const INDUSTRY_LABELS: Record<IndustryType, { label: string; icon: string
 };
 
 /**
+ * 소재지 (시/도) 목록
+ */
+export const REGIONS = [
+  '서울', '경기', '인천', '부산', '대구', '광주', '대전', '울산', '세종',
+  '강원', '충북', '충남', '전북', '전남', '경북', '경남', '제주'
+] as const;
+export type Region = typeof REGIONS[number];
+
+/**
  * 보유 인증 종류
  */
 export interface Certifications {
@@ -88,6 +97,8 @@ export interface UserInputData {
   fundPurpose: FundPurpose;      // 자금 용도
   requiredAmount: number;        // 필요 금액 (억원)
   industryType: IndustryType;    // 주요 업종
+  location: string;              // 소재지 (시/도)
+  ceoAge?: number;               // 대표자 나이 (만 나이, 선택)
   isYoungCeo: boolean;           // 청년 대표자 (만 39세 이하)
   existingLoanBalance: number;   // 기존 정책자금 잔액 (억원)
   certifications: Certifications; // 보유 인증
@@ -281,6 +292,8 @@ export function getInitialUserInput(): UserInputData {
     fundPurpose: 'operating',
     requiredAmount: 1,
     industryType: 'manufacturing',
+    location: '서울',
+    ceoAge: undefined,
     isYoungCeo: false,
     existingLoanBalance: 0,
     certifications: getInitialCertifications(),

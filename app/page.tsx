@@ -6,7 +6,7 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { Upload, FileText, X, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { usePolicyFundStore } from '@/stores/policy-fund-store';
 import type { Certifications, ExtractedCompanyData, IndustryType } from '@/lib/policy-fund/types';
-import { INDUSTRY_LABELS } from '@/lib/policy-fund/types';
+import { INDUSTRY_LABELS, REGIONS } from '@/lib/policy-fund/types';
 import { MiniDailyBriefing } from '@/components/policy-fund/MiniDailyBriefing';
 
 // 목업 정책자금 프로그램 (나중에 API로 대체)
@@ -539,6 +539,56 @@ export default function PolicyFundPage() {
                     </div>
                   </div>
 
+                  {/* 소재지 + 대표자 나이 (2열) */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* 소재지 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        소재지 (시/도)
+                      </label>
+                      <select
+                        value={userInput.location}
+                        onChange={(e) => setUserInput({ location: e.target.value })}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-orange-500 focus:outline-none bg-white"
+                      >
+                        {REGIONS.map((region) => (
+                          <option key={region} value={region}>{region}</option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        지역별 특화 자금 매칭에 사용
+                      </p>
+                    </div>
+
+                    {/* 대표자 나이 */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        대표자 나이 <span className="text-gray-400 font-normal">(선택)</span>
+                      </label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="19"
+                          max="80"
+                          value={userInput.ceoAge ?? ''}
+                          onChange={(e) => {
+                            const age = e.target.value ? Number(e.target.value) : undefined;
+                            setUserInput({
+                              ceoAge: age,
+                              isYoungCeo: age !== undefined ? age <= 39 : userInput.isYoungCeo
+                            });
+                          }}
+                          placeholder="만 나이"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:border-orange-500 focus:outline-none"
+                        />
+                        <span className="text-gray-700 font-medium">세</span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">
+                        입력 시 청년 자금 정확 매칭
+                      </p>
+                    </div>
+                  </div>
+
                   {/* 청년 대표자 체크박스 */}
                   <div>
                     <label
@@ -551,7 +601,14 @@ export default function PolicyFundPage() {
                       <input
                         type="checkbox"
                         checked={userInput.isYoungCeo}
-                        onChange={(e) => setUserInput({ isYoungCeo: e.target.checked })}
+                        onChange={(e) => {
+                          const isYoung = e.target.checked;
+                          setUserInput({
+                            isYoungCeo: isYoung,
+                            // 체크 해제 시 나이도 초기화 (선택사항)
+                            ceoAge: !isYoung && userInput.ceoAge && userInput.ceoAge <= 39 ? undefined : userInput.ceoAge
+                          });
+                        }}
                         className="w-5 h-5 text-orange-500 border-gray-300 rounded focus:ring-orange-500"
                       />
                       <div>
@@ -560,6 +617,11 @@ export default function PolicyFundPage() {
                         </span>
                         <p className="text-xs text-gray-500 mt-0.5">
                           체크 시 청년 전용 우대 자금을 우선 매칭합니다
+                          {userInput.ceoAge !== undefined && (
+                            <span className="ml-1 text-orange-600">
+                              (현재 {userInput.ceoAge}세 입력됨)
+                            </span>
+                          )}
                         </p>
                       </div>
                     </label>

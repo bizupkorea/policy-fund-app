@@ -1,5 +1,5 @@
 /**
- * 정책자금 1분진단 상태 관리
+ * 정책자금 1분진단 상태 관리 (AI 분석 지원 버전)
  * Zustand를 사용한 전역 상태 관리
  */
 
@@ -13,15 +13,36 @@ import type {
   PolicyFundMatchResult,
   Certifications,
   FundPurpose,
-  IndustryType,
-  calculateBusinessAge,
-  classifyCompanySize,
-  getInitialUserInput,
-  getInitialCertifications,
 } from '@/lib/policy-fund/types';
 import { PolicyFundProgram, CompanyPolicyProfile } from '@/lib/types/policy-fund';
-import { calculateMatchScore, ExtendedCompanyProfile, matchWithKnowledgeBase, DetailedMatchResult } from '@/lib/policy-fund/matching-engine';
-import { AIAdvisorResult } from '@/lib/policy-fund/gemini-advisor';
+import { calculateMatchScore } from '@/lib/policy-fund/matching-engine';
+import type { AIAnalysisResult } from '@/lib/policy-fund/gemini-advisor-new';
+import type { EligibilityResult } from '@/lib/policy-fund/eligibility-checker-new';
+
+// ============================================================================
+// AI 추천 결과 타입
+// ============================================================================
+
+export interface AIRecommendation {
+  fundId: string;
+  fundName: string;
+  agency: string;
+  category: string;
+  eligibility: EligibilityResult;
+  aiAnalysis: AIAnalysisResult;
+  maxAmount?: string;
+  interestRate?: string;
+}
+
+export interface GeneralMatch {
+  fundId: string;
+  fundName: string;
+  agency: string;
+  category: string;
+  eligibility: EligibilityResult;
+  maxAmount?: string;
+  applicationPeriod?: string;
+}
 
 // ============================================================================
 // Store 타입 정의
@@ -50,12 +71,17 @@ interface PolicyFundState {
   // 정책자금 프로그램 목록 (API에서 가져옴)
   programs: PolicyFundProgram[];
 
-  // Knowledge Base 매칭 결과
-  kbMatchResults: DetailedMatchResult[];
-  aiAnalysis: AIAdvisorResult[];
-
   // 분석 시간
   analyzedAt: Date | null;
+
+  // AI 추천 결과 (VIP 섹션)
+  aiRecommendations: AIRecommendation[];
+
+  // 일반 매칭 결과 (하단 리스트)
+  generalMatches: GeneralMatch[];
+
+  // AI 분석 로딩 상태
+  isAIAnalyzing: boolean;
 
   // Actions
   setStatus: (status: AnalysisStatus) => void;
@@ -72,7 +98,9 @@ interface PolicyFundState {
   buildProfile: () => PolicyFundProfile | null;
   setPrograms: (programs: PolicyFundProgram[]) => void;
   runMatching: () => void;
-  runKBMatching: () => Promise<void>;
+  setAIRecommendations: (recommendations: AIRecommendation[]) => void;
+  setGeneralMatches: (matches: GeneralMatch[]) => void;
+  setIsAIAnalyzing: (isAnalyzing: boolean) => void;
   reset: () => void;
 }
 
@@ -107,7 +135,7 @@ const initialUserInput: UserInputData = {
 // Store 생성
 // ============================================================================
 
-export const usePolicyFundStore = create<PolicyFundState>()(
+export const usePolicyFundStoreNew = create<PolicyFundState>()(
   persist(
     (set, get) => ({
       // 초기 상태
@@ -119,9 +147,10 @@ export const usePolicyFundStore = create<PolicyFundState>()(
       profile: null,
       matchResults: [],
       programs: [],
-      kbMatchResults: [],
-      aiAnalysis: [],
       analyzedAt: null,
+      aiRecommendations: [],
+      generalMatches: [],
+      isAIAnalyzing: false,
 
       // Status 설정
       setStatus: (status) => set({ status }),
@@ -279,71 +308,14 @@ export const usePolicyFundStore = create<PolicyFundState>()(
         });
       },
 
-      // Knowledge Base 기반 매칭 실행
-      runKBMatching: async () => {
-        const { profile, userInput } = get();
+      // AI 추천 설정
+      setAIRecommendations: (recommendations) => set({ aiRecommendations: recommendations }),
 
-        if (!profile) {
-          console.error('프로필이 없습니다.');
-          return;
-        }
+      // 일반 매칭 설정
+      setGeneralMatches: (matches) => set({ generalMatches: matches }),
 
-        // ExtendedCompanyProfile로 변환
-        const extendedProfile: ExtendedCompanyProfile = {
-          companyName: profile.companyName,
-          businessNumber: profile.businessNumber,
-          companySize: profile.companySize,
-          businessAge: profile.businessAge,
-          industry: profile.industry,
-          location: profile.location,
-          annualRevenue: profile.annualRevenue,
-          employeeCount: profile.employeeCount,
-          hasExportRevenue: profile.hasExportRevenue,
-          hasRndActivity: profile.hasRndActivity,
-          isVentureCompany: profile.isVentureCompany,
-          isInnobiz: profile.certifications.innobiz,
-          isMainbiz: profile.certifications.mainbiz,
-          // Extended fields
-          revenue: profile.annualRevenue / 100000000, // 원 → 억원
-          industryName: profile.industry,
-          region: profile.location,
-          hasTaxDelinquency: userInput.hasTaxDelinquency,
-          hasPreviousSupport: false,
-          isYouthCompany: userInput.isYoungCeo,
-          hasExistingLoan: userInput.existingLoanBalance > 0,
-        };
-
-        try {
-          // Knowledge Base 매칭 실행
-          const kbResult = await matchWithKnowledgeBase(extendedProfile, {
-            useAI: false, // 빠른 응답을 위해 AI 비활성화
-            topN: 10,
-          });
-
-          // 기존 matchResults 형식으로도 변환
-          const legacyResults: PolicyFundMatchResult[] = kbResult.results.map((result, idx) => ({
-            programId: `kb-${idx}`,
-            programName: result.supportDetails?.amount
-              ? `${result.eligibilityReasons[0] || '정책자금'}`
-              : '정책자금',
-            matchScore: result.score,
-            matchLevel: result.level,
-            matchReasons: result.eligibilityReasons,
-            warnings: result.ineligibilityReasons,
-          }));
-
-          set({
-            kbMatchResults: kbResult.results,
-            aiAnalysis: kbResult.aiAnalysis || [],
-            matchResults: [...get().matchResults, ...legacyResults],
-            status: 'completed',
-            analyzedAt: new Date(),
-          });
-        } catch (error) {
-          console.error('KB 매칭 실패:', error);
-          set({ status: 'error', error: 'Knowledge Base 매칭에 실패했습니다.' });
-        }
-      },
+      // AI 분석 로딩 상태 설정
+      setIsAIAnalyzing: (isAnalyzing) => set({ isAIAnalyzing: isAnalyzing }),
 
       // 초기화
       reset: () =>
@@ -355,13 +327,14 @@ export const usePolicyFundStore = create<PolicyFundState>()(
           userInput: initialUserInput,
           profile: null,
           matchResults: [],
-          kbMatchResults: [],
-          aiAnalysis: [],
           analyzedAt: null,
+          aiRecommendations: [],
+          generalMatches: [],
+          isAIAnalyzing: false,
         }),
     }),
     {
-      name: 'policy-fund-store',
+      name: 'policy-fund-store-new',
       partialize: (state) => ({
         // 파일 객체는 저장하지 않음
         extractedData: state.extractedData,
@@ -369,6 +342,8 @@ export const usePolicyFundStore = create<PolicyFundState>()(
         profile: state.profile,
         matchResults: state.matchResults,
         analyzedAt: state.analyzedAt,
+        aiRecommendations: state.aiRecommendations,
+        generalMatches: state.generalMatches,
       }),
     }
   )
@@ -386,3 +361,6 @@ export const selectProfile = (state: PolicyFundState) => state.profile;
 export const selectMatchResults = (state: PolicyFundState) => state.matchResults;
 export const selectHighMatchCount = (state: PolicyFundState) =>
   state.matchResults.filter((r) => r.matchLevel === 'high').length;
+export const selectAIRecommendations = (state: PolicyFundState) => state.aiRecommendations;
+export const selectGeneralMatches = (state: PolicyFundState) => state.generalMatches;
+export const selectIsAIAnalyzing = (state: PolicyFundState) => state.isAIAnalyzing;
