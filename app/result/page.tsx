@@ -7,9 +7,68 @@ import { SummaryBanner } from '@/components/policy-fund/SummaryBanner';
 import { FundCard } from '@/components/policy-fund/FundCard';
 import { DocumentChecklist } from '@/components/policy-fund/DocumentChecklist';
 import { OneSummaryCard } from '@/components/policy-fund/OneSummaryCard';
+import { BestPicksSection } from '@/components/policy-fund/BestPicksSection';
 import { PolicyFundProgram, CompanyPolicyProfile } from '@/lib/types/policy-fund';
-import { calculateMatchScore } from '@/lib/policy-fund/matching-engine';
+import { calculateMatchScore, DetailedMatchResult } from '@/lib/policy-fund/matching-engine';
 import { usePolicyFundStore } from '@/stores/policy-fund-store';
+
+// 데모용 KB 매칭 결과 (BestPicksSection 표시용)
+const mockKbResults: DetailedMatchResult[] = [
+  {
+    fundId: 'kosmes-startup',
+    fundName: '혁신창업사업화자금',
+    institutionId: 'kosmes',
+    institutionName: '중소벤처기업진흥공단',
+    score: 92,
+    level: 'high',
+    reasons: ['창업 7년 이내 조건 충족', '제조업/지식서비스업 해당', '기술력 우수 기업'],
+    warnings: [],
+    isEligible: true,
+    eligibilityReasons: ['창업 7년 이내 기업으로 신청 가능', '벤처기업 인증 시 가점 부여'],
+    ineligibilityReasons: [],
+    supportDetails: {
+      amount: '최대 60억원',
+      interestRate: '정책금리 연동 (2~3%)',
+      repaymentPeriod: '10년 (거치 4년)'
+    }
+  },
+  {
+    fundId: 'kodit-startup',
+    fundName: '창업기업보증',
+    institutionId: 'kodit',
+    institutionName: '신용보증기금',
+    score: 85,
+    level: 'high',
+    reasons: ['창업 5년 이내 조건 충족', '보증한도 우대 대상', '중소기업 해당'],
+    warnings: [],
+    isEligible: true,
+    eligibilityReasons: ['창업 5년 이내 기업 특별보증 대상', '기술력 보유 시 보증비율 우대'],
+    ineligibilityReasons: [],
+    supportDetails: {
+      amount: '최대 30억원',
+      interestRate: '보증료 0.5~1.0%',
+      repaymentPeriod: '보증기간 5년'
+    }
+  },
+  {
+    fundId: 'kibo-venture-startup',
+    fundName: '벤처창업자금보증',
+    institutionId: 'kibo',
+    institutionName: '기술보증기금',
+    score: 78,
+    level: 'medium',
+    reasons: ['기술력 보유 인정', '창업기업 우대 대상', '벤처인증 가점'],
+    warnings: ['기술평가 필요'],
+    isEligible: true,
+    eligibilityReasons: ['기술사업성 평가 통과 시 보증 가능', '벤처기업 인증 보유 시 우대'],
+    ineligibilityReasons: [],
+    supportDetails: {
+      amount: '최대 50억원',
+      interestRate: '보증료 0.5~1.5%',
+      repaymentPeriod: '보증기간 5년'
+    }
+  }
+];
 
 // 데모용 목업 프로그램 데이터 (API 연동 전까지 사용)
 const mockPrograms: PolicyFundProgram[] = [
@@ -137,7 +196,7 @@ const mockPrograms: PolicyFundProgram[] = [
 
 export default function PolicyFundResultPage() {
   const router = useRouter();
-  const { profile, matchResults, status, programs: storePrograms } = usePolicyFundStore();
+  const { profile, matchResults, status, programs: storePrograms, kbMatchResults } = usePolicyFundStore();
 
   const [selectedProgram, setSelectedProgram] = useState<PolicyFundProgram | null>(null);
   const [showChecklist, setShowChecklist] = useState(false);
@@ -277,6 +336,12 @@ export default function PolicyFundResultPage() {
             }}
           />
 
+          {/* 섹션 A: AI 맞춤 추천 자금 (Best Picks) */}
+          <BestPicksSection
+            results={kbMatchResults.length > 0 ? kbMatchResults : mockKbResults}
+            maxItems={3}
+          />
+
           {/* 데모/실제 데이터 알림 */}
           {isUsingMockData ? (
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
@@ -353,6 +418,17 @@ export default function PolicyFundResultPage() {
               </div>
             </div>
           )}
+
+          {/* 섹션 B: 실시간 전체 모집 공고 */}
+          <div className="flex items-center gap-3 mb-4 mt-8">
+            <div className="w-8 h-8 bg-slate-600 rounded-lg flex items-center justify-center">
+              <span className="text-white text-sm">📋</span>
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">실시간 전체 모집 공고</h3>
+              <p className="text-sm text-slate-500">기업마당 API 연동 데이터</p>
+            </div>
+          </div>
 
           {/* 정렬 옵션 */}
           <div className="flex items-center justify-between mb-4">

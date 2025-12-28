@@ -63,6 +63,12 @@ export interface ParsedPolicyConditions {
  * 상세 매칭 결과 (불가 사유 포함)
  */
 export interface DetailedMatchResult extends MatchResult {
+  // 자금 정보
+  fundId: string;
+  fundName: string;
+  institutionId: string;
+  institutionName?: string;
+
   isEligible: boolean;
   eligibilityReasons: string[];    // 적합 사유
   ineligibilityReasons: string[];  // 불가 사유 (핵심!)
@@ -609,6 +615,12 @@ export function calculateDetailedMatchScore(
   } : undefined;
 
   return {
+    // 기업마당 API 프로그램용 - program.id 사용
+    fundId: program.id,
+    fundName: program.name,
+    institutionId: program.executingAgency || 'unknown',
+    institutionName: program.executingAgency,
+
     score,
     level,
     reasons: eligibilityReasons,
@@ -1121,7 +1133,15 @@ export function convertToDetailedMatchResult(
   eligibilityResult: EligibilityResult,
   fund?: PolicyFundKnowledge
 ): DetailedMatchResult {
+  const institution = fund ? INSTITUTIONS[fund.institutionId] : undefined;
+
   return {
+    // 자금 정보
+    fundId: eligibilityResult.fundId,
+    fundName: eligibilityResult.fundName,
+    institutionId: eligibilityResult.institutionId,
+    institutionName: institution?.name,
+
     score: eligibilityResult.eligibilityScore,
     level: eligibilityResult.eligibilityScore >= 70 ? 'high' :
            eligibilityResult.eligibilityScore >= 40 ? 'medium' : 'low',
