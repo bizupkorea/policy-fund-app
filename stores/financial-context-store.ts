@@ -10,11 +10,15 @@ export interface Session {
 }
 
 interface FinancialContextStore {
-  sessions: Session[];
+  sessions: Map<string, Session>;
   currentSessionId: string | null;
+  switchSession: (sessionId: string) => void;
+  deleteSession: (sessionId: string) => void;
 }
 
-export const useFinancialContext = create<FinancialContextStore>()(() => ({
-  sessions: [],
+export const useFinancialContext = create<FinancialContextStore>()((set) => ({
+  sessions: new Map(),
   currentSessionId: null,
+  switchSession: () => {},
+  deleteSession: () => {},
 }));

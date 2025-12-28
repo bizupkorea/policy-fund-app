@@ -3,7 +3,14 @@
  * 업무별 리포트 생성 시스템의 타입 정의
  */
 
-import { WorkflowType } from '@/stores/financial-context-store';
+// 정책자금 앱용 스텁 타입
+export type WorkflowType =
+  | 'audit'
+  | 'tax'
+  | 'consulting'
+  | 'ma'
+  | 'ipo'
+  | 'valuation';
 
 /**
  * 워크플로우별 전문가 페르소나

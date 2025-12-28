@@ -32,8 +32,8 @@ export function SessionHistoryItem({
   const [isHovered, setIsHovered] = useState(false);
 
   const displayName = getSessionDisplayName(
-    session.context.documentInfo.companyName,
-    session.context.documentInfo.fiscalYear
+    session.companyName,
+    session.fiscalYear
   );
 
   const timeAgo = formatTimeAgo(session.lastAccessedAt);

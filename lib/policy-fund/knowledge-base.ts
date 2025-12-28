@@ -640,6 +640,15 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       },
     },
 
+    practicalInfo: {
+      processingTime: '1~2주 (신속 심사)',
+      requiredDocuments: [
+        '벤처/이노비즈 인증서',
+        '재무제표',
+        '사업자등록증',
+      ],
+    },
+
     riskFactors: [
       '벤처/이노비즈 인증 유효기간 확인',
       '인증 만료 시 일반보증 전환',
@@ -747,6 +756,15 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
         gracePeriod: 2,
         description: '5년 (거치 2년)',
       },
+    },
+
+    practicalInfo: {
+      processingTime: '2~3주',
+      requiredDocuments: [
+        '사업자등록증',
+        '재무제표',
+        '매출 증빙',
+      ],
     },
 
     riskFactors: [
