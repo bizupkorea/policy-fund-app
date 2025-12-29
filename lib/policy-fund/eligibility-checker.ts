@@ -13,6 +13,7 @@ import {
   IndustryCategory,
   CompanyScale,
   OwnerCharacteristic,
+  BusinessAgeException,
   POLICY_FUND_KNOWLEDGE_BASE,
 } from './knowledge-base';
 
@@ -61,6 +62,9 @@ export interface CompanyProfile {
   hasExportExperience?: boolean; // 수출 경험
   hasTechAssets?: boolean; // 기술 자산 (특허 등)
   isEmergencySituation?: boolean; // 긴급 상황 (매출급감, 재해 등)
+
+  // 업력 예외 조건 (청창사 졸업 등)
+  businessAgeExceptions?: BusinessAgeException[];
 }
 
 /** 자격 체크 결과 */
@@ -129,9 +133,13 @@ export function checkFundEligibility(
 
   // ========== 2단계: 필수 조건 체크 ==========
 
-  // 업력 체크
+  // 업력 체크 (예외 조건 포함)
   if (criteria.businessAge) {
-    const ageCheck = checkBusinessAge(profile.businessAge, criteria.businessAge);
+    const ageCheck = checkBusinessAge(
+      profile.businessAge,
+      criteria.businessAge,
+      profile.businessAgeExceptions
+    );
     if (ageCheck.status === 'pass') {
       passedConditions.push(ageCheck);
     } else if (ageCheck.status === 'fail') {
@@ -207,14 +215,33 @@ export function checkFundEligibility(
     }
   }
 
-  // ========== 3단계: 우대 조건 체크 ==========
+  // 수출실적 요구 체크
+  if (criteria.requiresExport) {
+    const exportCheck = checkExportRequirement(profile.hasExportExperience);
+    if (exportCheck.status === 'pass') {
+      passedConditions.push(exportCheck);
+    } else if (exportCheck.status === 'warning') {
+      warningConditions.push(exportCheck);
+    }
+  }
+
+  // ========== 3단계: 대표자 특성 체크 ==========
+  // 청년 전용 자금인지 확인 (자금명에 '청년' 포함)
+  const isYouthOnlyFund = fund.name.includes('청년') || fund.id.includes('youth');
+
   if (criteria.preferredOwnerTypes) {
     const ownerCheck = checkOwnerCharacteristics(
       profile.ownerCharacteristics || [],
-      criteria.preferredOwnerTypes
+      criteria.preferredOwnerTypes,
+      isYouthOnlyFund
     );
     if (ownerCheck.status === 'bonus') {
       bonusConditions.push(ownerCheck);
+    } else if (ownerCheck.status === 'fail') {
+      // 청년 전용 자금인데 청년이 아닌 경우 실패
+      failedConditions.push(ownerCheck);
+    } else if (ownerCheck.status === 'pass') {
+      passedConditions.push(ownerCheck);
     }
   }
 
@@ -314,9 +341,16 @@ function checkExclusionConditions(
 
 function checkBusinessAge(
   businessAge: number,
-  criteria: { min?: number; max?: number; description: string }
+  criteria: {
+    min?: number;
+    max?: number;
+    maxWithException?: number;
+    exceptions?: BusinessAgeException[];
+    description: string
+  },
+  companyExceptions?: BusinessAgeException[]
 ): CheckResult {
-  const { min, max, description } = criteria;
+  const { min, max, maxWithException, exceptions, description } = criteria;
 
   if (min !== undefined && businessAge < min) {
     return {
@@ -327,7 +361,39 @@ function checkBusinessAge(
     };
   }
 
+  // 업력 초과 시 예외 조건 체크
   if (max !== undefined && businessAge > max) {
+    // 예외 조건이 있고, 기업이 해당 예외에 해당하는지 확인
+    if (maxWithException && exceptions && companyExceptions) {
+      const hasValidException = exceptions.some(ex =>
+        companyExceptions.includes(ex)
+      );
+
+      if (hasValidException && businessAge <= maxWithException) {
+        // 예외 조건 적용으로 통과
+        const matchedExceptions = exceptions.filter(ex =>
+          companyExceptions.includes(ex)
+        );
+        const exceptionLabel = getExceptionLabel(matchedExceptions[0]);
+        return {
+          condition: '업력 조건 (예외 적용)',
+          status: 'pass',
+          description: `${exceptionLabel} 예외 적용으로 ${maxWithException}년까지 가능 (현재: ${businessAge}년)`,
+          impact: 10,
+        };
+      }
+    }
+
+    // 예외 조건이 있지만 기업이 해당하지 않는 경우 경고 표시
+    if (maxWithException && exceptions && (!companyExceptions || companyExceptions.length === 0)) {
+      return {
+        condition: '업력 조건',
+        status: 'warning',
+        description: `업력 ${max}년 초과 (${businessAge}년). 단, 청창사/글로벌창업사관학교 졸업 시 ${maxWithException}년까지 가능`,
+        impact: -15,
+      };
+    }
+
     return {
       condition: '업력 조건',
       status: 'fail',
@@ -342,6 +408,18 @@ function checkBusinessAge(
     description: `업력 조건 충족 (${description})`,
     impact: 10,
   };
+}
+
+/** 예외 조건 라벨 변환 */
+function getExceptionLabel(exception: BusinessAgeException): string {
+  const labels: Record<BusinessAgeException, string> = {
+    youth_startup_academy: '청년창업사관학교 졸업',
+    global_startup_academy: '글로벌창업사관학교 졸업',
+    kibo_youth_guarantee: '기보 청년창업우대보증',
+    startup_success_package: '창업성공패키지 선정',
+    tips_program: 'TIPS 프로그램 선정',
+  };
+  return labels[exception] || exception;
 }
 
 function checkRevenue(
@@ -492,6 +570,24 @@ function checkCreditRating(
   };
 }
 
+function checkExportRequirement(hasExportExperience?: boolean): CheckResult {
+  if (hasExportExperience) {
+    return {
+      condition: '수출실적',
+      status: 'pass',
+      description: '수출실적 보유 기업',
+      impact: 10,
+    };
+  }
+
+  return {
+    condition: '수출실적',
+    status: 'warning',
+    description: '수출실적 또는 수출계획 필요 (미보유 시 신청 불가)',
+    impact: -15,
+  };
+}
+
 function checkCertifications(
   companyCerts: CompanyScale[],
   requiredCerts: CompanyScale[]
@@ -520,10 +616,31 @@ function checkCertifications(
 
 function checkOwnerCharacteristics(
   ownerChars: OwnerCharacteristic[],
-  preferredChars: OwnerCharacteristic[]
+  preferredChars: OwnerCharacteristic[],
+  isRequiredCondition: boolean = false  // 청년 전용 자금인 경우 true
 ): CheckResult {
   const hasPreferred = preferredChars.some((char) => ownerChars.includes(char));
 
+  // 청년 전용 자금인 경우: 청년이면 pass, 아니면 fail
+  if (isRequiredCondition && preferredChars.includes('youth')) {
+    if (ownerChars.includes('youth')) {
+      return {
+        condition: '청년 대표자',
+        status: 'pass',
+        description: '청년 대표자 조건 충족 (만 39세 이하)',
+        impact: 15,
+      };
+    } else {
+      return {
+        condition: '청년 대표자',
+        status: 'fail',
+        description: '청년 전용 자금: 만 39세 이하 대표자만 신청 가능',
+        impact: -40,
+      };
+    }
+  }
+
+  // 일반 우대 조건
   if (hasPreferred) {
     const charLabels = ownerChars
       .filter((c) => preferredChars.includes(c))

@@ -83,7 +83,7 @@ export function MiniDailyBriefing({ onViewAll }: MiniDailyBriefingProps) {
 
           {newPrograms.length > 0 ? (
             <div className="space-y-1.5">
-              {newPrograms.slice(0, 2).map((program) => (
+              {newPrograms.slice(0, 3).map((program) => (
                 <div
                   key={program.id}
                   onClick={() => handleProgramClick(program)}
@@ -116,7 +116,7 @@ export function MiniDailyBriefing({ onViewAll }: MiniDailyBriefingProps) {
 
           {deadlineSoonPrograms.length > 0 ? (
             <div className="space-y-1.5">
-              {deadlineSoonPrograms.slice(0, 2).map((program) => (
+              {deadlineSoonPrograms.slice(0, 3).map((program) => (
                 <div
                   key={program.id}
                   onClick={() => handleProgramClick(program)}

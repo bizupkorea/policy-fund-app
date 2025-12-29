@@ -31,8 +31,17 @@ const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  /**
+   * Button variant style
+   */
+  variant?: 'primary' | 'secondary' | 'accent' | 'outline' | 'ghost' | 'success' | 'warning' | 'danger';
+
+  /**
+   * Button size
+   */
+  size?: 'sm' | 'md' | 'lg';
+
   /**
    * Show loading spinner and disable button
    */

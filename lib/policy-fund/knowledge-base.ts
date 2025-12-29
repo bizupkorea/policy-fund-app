@@ -47,12 +47,22 @@ export type OwnerCharacteristic =
   | 'veteran'    // 보훈대상자
   | 'general';   // 일반
 
+/** 업력 예외 조건 타입 */
+export type BusinessAgeException =
+  | 'youth_startup_academy'      // 청년창업사관학교 졸업
+  | 'global_startup_academy'     // 글로벌창업사관학교 졸업
+  | 'kibo_youth_guarantee'       // 기보 청년창업우대보증 지원
+  | 'startup_success_package'    // 창업성공패키지 선정
+  | 'tips_program';              // TIPS 프로그램 선정
+
 /** 자격 조건 */
 export interface EligibilityCriteria {
   // 업력 조건
   businessAge?: {
     min?: number;  // 최소 업력 (년)
     max?: number;  // 최대 업력 (년)
+    maxWithException?: number;  // 예외 적용 시 최대 업력 (년)
+    exceptions?: BusinessAgeException[];  // 적용 가능한 예외 조건
     description: string;
   };
 
@@ -97,6 +107,9 @@ export interface EligibilityCriteria {
 
   // 제외 조건 (이 조건에 해당하면 불가)
   exclusionConditions?: string[];
+
+  // 수출실적 요구 여부
+  requiresExport?: boolean;
 }
 
 /** 지원 조건 */
@@ -341,7 +354,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '벤처·이노비즈 인증기업 우대',
     ],
 
-    officialUrl: 'https://www.kosmes.or.kr/sbc/SH/SBI/SHSBI001M0.do',
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
 
     meta: {
       lastUpdated: '2025-01',
@@ -369,6 +382,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
         description: '연매출 120억원 이하',
       },
       allowedIndustries: ['all'],
+      requiresExport: true,
       additionalRequirements: [
         '수출실적 보유 또는 수출계획 수립 기업',
         '신규 사업 진출 계획 보유',
@@ -408,6 +422,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '수출 실적 증빙 필요',
       '신사업 계획의 구체성 필요',
     ],
+
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
 
     meta: {
       lastUpdated: '2025-01',
@@ -463,6 +479,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '피해 증빙 서류 필수',
       '매출 감소 객관적 증빙 필요',
     ],
+
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
 
     meta: {
       lastUpdated: '2025-01',
@@ -580,6 +598,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '기술창업 우대',
     ],
 
+    officialUrl: 'https://www.kodit.co.kr/kodit/cm/cntnts/cntntsView.do?mi=3145&cntntsId=11379',
+
     meta: {
       lastUpdated: '2025-01',
       confidence: 0.85,
@@ -691,6 +711,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '신속 심사',
     ],
 
+    officialUrl: 'https://www.kibo.or.kr/vc/index.do',
+
     meta: {
       lastUpdated: '2025-01',
       confidence: 0.85,
@@ -745,6 +767,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '제조업 업종 증빙 필요',
       '근로자 수 기준 엄격',
     ],
+
+    officialUrl: 'https://www.semas.or.kr/web/main/index.kmdc',
 
     meta: {
       lastUpdated: '2025-01',
@@ -804,6 +828,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '매출 기준 확인 필요',
     ],
 
+    officialUrl: 'https://www.semas.or.kr/web/main/index.kmdc',
+
     meta: {
       lastUpdated: '2025-01',
       confidence: 0.8,
@@ -852,6 +878,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '피해 증빙 필수',
       '지원 한도 제한적',
     ],
+
+    officialUrl: 'https://www.semas.or.kr/web/main/index.kmdc',
 
     meta: {
       lastUpdated: '2025-01',
@@ -929,6 +957,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '기술특례 상장 추진 기업 우대',
     ],
 
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
+
     meta: {
       lastUpdated: '2025-01',
       confidence: 0.85,
@@ -998,6 +1028,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '청년 재창업자 금리 우대',
     ],
 
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
+
     meta: {
       lastUpdated: '2025-01',
       confidence: 0.8,
@@ -1064,6 +1096,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '뿌리산업 기업 우대',
     ],
 
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
+
     meta: {
       lastUpdated: '2025-01',
       confidence: 0.85,
@@ -1128,6 +1162,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       'K-ESG 우수기업 금리 우대',
       '녹색인증 기업 우대',
     ],
+
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
 
     meta: {
       lastUpdated: '2025-01',
@@ -1196,6 +1232,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '수출 기업 우대',
     ],
 
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
+
     meta: {
       lastUpdated: '2025-01',
       confidence: 0.9,
@@ -1262,6 +1300,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '우량 거래처 보유 기업 우대',
     ],
 
+    officialUrl: 'https://www.kodit.co.kr/kodit/cm/cntnts/cntntsView.do?mi=2806&cntntsId=11379',
+
     meta: {
       lastUpdated: '2025-01',
       confidence: 0.8,
@@ -1316,6 +1356,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '혁신성장 유니콘 기업 우대',
       '특허 보유 기업 보증료 감면',
     ],
+
+    officialUrl: 'https://www.kodit.co.kr',
 
     meta: {
       lastUpdated: '2025-01',
@@ -1375,6 +1417,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '지역인재 고용 우대',
     ],
 
+    officialUrl: 'https://www.kodit.co.kr/kodit/cm/cntnts/cntntsView.do?mi=2833&cntntsId=11387',
+
     meta: {
       lastUpdated: '2025-01',
       confidence: 0.85,
@@ -1429,6 +1473,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '수출 신규 진출 기업 우대',
       '강소기업 우대',
     ],
+
+    officialUrl: 'https://www.kodit.co.kr/kodit/cm/cntnts/cntntsView.do?mi=2834&cntntsId=11388',
 
     meta: {
       lastUpdated: '2025-01',
@@ -1485,6 +1531,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       'IP 매출 비중 높은 기업 우대',
     ],
 
+    officialUrl: 'https://www.kibo.or.kr/main/contents.do?menuNo=200047',
+
     meta: {
       lastUpdated: '2025-01',
       confidence: 0.8,
@@ -1538,6 +1586,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '정부 R&D 과제 수행 기업 우대',
       '연구인력 비율 높은 기업 우대',
     ],
+
+    officialUrl: 'https://www.kibo.or.kr/main/contents.do?menuNo=200046',
 
     meta: {
       lastUpdated: '2025-01',
@@ -1593,6 +1643,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '문화콘텐츠 진흥원 추천 기업 우대',
       '해외 수출 실적 기업 우대',
     ],
+
+    officialUrl: 'https://www.kibo.or.kr/main/contents.do?menuNo=200048',
 
     meta: {
       lastUpdated: '2025-01',
@@ -1651,6 +1703,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '창업지원사업 선정자 우대',
       '기술창업 우대',
     ],
+
+    officialUrl: 'https://www.kibo.or.kr/vc/index.do',
 
     meta: {
       lastUpdated: '2025-01',
@@ -1719,6 +1773,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '업종별 지원 제외 확인',
     ],
 
+    officialUrl: 'https://www.semas.or.kr/web/board/webBoardList.kmdc?bCd=policy_fund',
+
     meta: {
       lastUpdated: '2025-01',
       confidence: 0.9,
@@ -1778,6 +1834,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '보증료 감면',
       '우대금리 적용',
     ],
+
+    officialUrl: 'https://www.semas.or.kr/web/board/webBoardList.kmdc?bCd=policy_fund',
 
     meta: {
       lastUpdated: '2025-01',
@@ -1839,6 +1897,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '청년창업 우대금리',
       '보증료 감면',
     ],
+
+    officialUrl: 'https://www.semas.or.kr/web/board/webBoardList.kmdc?bCd=policy_fund',
 
     meta: {
       lastUpdated: '2025-01',
@@ -1906,6 +1966,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '청년·여성 기업 우대',
     ],
 
+    officialUrl: 'https://www.seoulshinbo.co.kr/sb/main/main.do',
+
     meta: {
       lastUpdated: '2025-01',
       confidence: 0.85,
@@ -1971,6 +2033,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '청년·여성 기업 우대',
     ],
 
+    officialUrl: 'https://www.gcgf.or.kr/main/main.do',
+
     meta: {
       lastUpdated: '2025-01',
       confidence: 0.85,
@@ -2035,6 +2099,8 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '후속투자 유치 기업 추가 지원',
     ],
 
+    officialUrl: 'https://www.k-startup.go.kr/main.do',
+
     meta: {
       lastUpdated: '2025-01',
       confidence: 0.8,
@@ -2097,10 +2163,396 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       '산업부 인증 기업 우대',
     ],
 
+    officialUrl: 'https://www.motie.go.kr/kor/article/ATCLb63f89e3b/5',
+
     meta: {
       lastUpdated: '2025-01',
       confidence: 0.8,
       notes: '산업부 R&D 지원 연계',
+    },
+  },
+
+  // ========== 청년 전용 정책자금 (5개) ==========
+  {
+    id: 'kosmes-youth-startup',
+    institutionId: 'kosmes',
+    name: '청년전용창업자금',
+    shortName: '청년창업',
+    type: 'loan',
+    description: '만 39세 이하 청년 대표자의 창업 초기 기업 전용 저금리 융자',
+
+    eligibility: {
+      businessAge: {
+        max: 3,
+        maxWithException: 7,  // 예외 적용 시 7년까지 가능
+        exceptions: [
+          'youth_startup_academy',    // 청년창업사관학교 졸업
+          'global_startup_academy',   // 글로벌창업사관학교 졸업
+          'kibo_youth_guarantee',     // 기보 청년창업우대보증 지원
+        ],
+        description: '창업 3년 미만 (예외: 청창사/글로벌창업사관학교 졸업 시 7년)',
+      },
+      revenue: {
+        max: 12000000000,  // 120억
+        description: '연매출 120억원 이하 중소기업',
+      },
+      allowedIndustries: ['manufacturing', 'it_service', 'other_service'],
+      excludedIndustries: ['부동산임대업', '유흥업', '도박업', '금융업'],
+      preferredOwnerTypes: ['youth'],
+      additionalRequirements: [
+        '대표자 만 39세 이하',
+        '창업 3년 미만 또는 예비창업자',
+        '(예외) 청년창업사관학교/글로벌창업사관학교 졸업 시 7년까지',
+        '대한민국 내 사업장 소재',
+      ],
+      exclusionConditions: [
+        '휴·폐업 중인 기업',
+        '세금 체납 중인 기업',
+        '최근 5년 내 정책자금 3회 이상 수혜',
+        '동일 대표자 부정수급 이력',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 100000000,  // 1억 (제조업 2억)
+        unit: '억원',
+        description: '기업당 1억원 이내 (제조업/지역특화산업 2억원)',
+      },
+      interestRate: {
+        min: 2.5,
+        max: 2.5,
+        type: 'fixed',
+        description: '연 2.5% (고정금리)',
+      },
+      loanPeriod: {
+        years: 6,
+        gracePeriod: 3,
+        description: '운전 6년(거치 3년), 시설 10년(거치 3년)',
+      },
+      repaymentMethod: '거치 후 원금균등분할상환',
+    },
+
+    practicalInfo: {
+      processingTime: '선착순 접수, 약 2~3주',
+      requiredDocuments: [
+        '사업계획서',
+        '사업자등록증 또는 창업계획서',
+        '대표자 신분증 (연령 확인)',
+        '재무제표 (있는 경우)',
+      ],
+      applicationMethod: '중진공 지역본부 선착순 접수 (온라인 신청)',
+      contactInfo: '중진공 콜센터 1357',
+    },
+
+    riskFactors: [
+      '선착순 마감으로 접수 시기 중요',
+      '예비창업자는 사업계획서 구체성 필수',
+    ],
+
+    preferentialConditions: [
+      '여성 청년창업자 우대',
+      '제조업/IT/친환경 산업 우대',
+      '기보/신보 보증서 발급 시 가점',
+    ],
+
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
+
+    meta: {
+      lastUpdated: '2025-01',
+      validFrom: '2025-01-01',
+      confidence: 0.95,
+      notes: '청년 대표자 전용 최저금리 정책자금',
+    },
+  },
+
+  {
+    id: 'kodit-youth-dream',
+    institutionId: 'kodit',
+    name: '청년희망드림보증',
+    shortName: '신보 청년드림',
+    type: 'guarantee',
+    description: '17~39세 청년 대표자 창업기업 전용 고보증비율 상품',
+
+    eligibility: {
+      businessAge: {
+        max: 7,
+        description: '창업 7년 이내',
+      },
+      allowedIndustries: ['manufacturing', 'it_service', 'other_service'],
+      excludedIndustries: ['부동산임대업', '유흥주점업'],
+      preferredOwnerTypes: ['youth'],
+      additionalRequirements: [
+        '대표자 만 17~39세',
+        '창업 7년 이내 기업',
+        '제조업, 유망창업 업종 우대',
+      ],
+      exclusionConditions: [
+        '세금 체납',
+        '금융기관 연체',
+        '신용관리정보 등록',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 300000000,  // 3억
+        unit: '억원',
+        description: '기업당 3억원 이내',
+      },
+      guaranteeRatio: {
+        min: 95,
+        max: 95,
+        description: '보증비율 95% (고정)',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 1주',
+      requiredDocuments: [
+        '사업자등록증',
+        '대표자 신분증',
+        '재무제표 또는 부가세신고서',
+      ],
+      applicationMethod: '신보 영업점 또는 온라인 (온비즈)',
+      contactInfo: '1588-6565',
+    },
+
+    riskFactors: [
+      '대표자 연령 증빙 필수',
+      '창업 7년 초과 시 일반보증 전환',
+    ],
+
+    preferentialConditions: [
+      '보증료 0.3% 고정 (일반 0.5~2.0%)',
+      '보증비율 95% 고정 (일반 70~100%)',
+    ],
+
+    officialUrl: 'https://www.kodit.co.kr',
+
+    meta: {
+      lastUpdated: '2025-01',
+      confidence: 0.9,
+      notes: '청년 전용 최고 보증비율 상품',
+    },
+  },
+
+  {
+    id: 'kibo-youth-techstar',
+    institutionId: 'kibo',
+    name: '청년테크스타보증',
+    shortName: '기보 청년테크',
+    type: 'guarantee',
+    description: '우수 기술력 보유 청년 창업기업 전용 프리미엄 보증',
+
+    eligibility: {
+      businessAge: {
+        max: 7,
+        description: '창업 7년 이내',
+      },
+      preferredOwnerTypes: ['youth'],
+      additionalRequirements: [
+        '대표자 만 39세 이하',
+        '기술력 보유 (특허, 기술인력 등)',
+        '기술사업성 평가 통과',
+      ],
+      exclusionConditions: [
+        '세금 체납',
+        '금융기관 연체',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 500000000,  // 5억
+        unit: '억원',
+        description: '기업당 5억원 이내',
+      },
+      guaranteeRatio: {
+        min: 95,
+        max: 100,
+        description: '보증비율 95~100%',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 2주 (기술평가 포함)',
+      requiredDocuments: [
+        '기술관련 서류 (특허, 인증서 등)',
+        '사업계획서',
+        '대표자 신분증',
+        '재무제표',
+      ],
+      applicationMethod: '기보 영업점 또는 디지털지점',
+      contactInfo: '1544-1120',
+    },
+
+    riskFactors: [
+      '기술평가 등급에 따른 한도 차등',
+      '대표자 연령 증빙 필수',
+    ],
+
+    preferentialConditions: [
+      '보증료 50% 감면',
+      '신속 심사 프로세스',
+      '기술창업 전용 우대',
+    ],
+
+    officialUrl: 'https://www.kibo.or.kr/vc/index.do',
+
+    meta: {
+      lastUpdated: '2025-01',
+      confidence: 0.85,
+      notes: '2025년 신설 청년 기술창업 전용',
+    },
+  },
+
+  {
+    id: 'semas-youth-employment',
+    institutionId: 'semas',
+    name: '청년고용연계자금',
+    shortName: '청년고용연계',
+    type: 'loan',
+    description: '청년 소상공인 또는 청년 고용 소상공인 전용 자금',
+
+    eligibility: {
+      businessAge: {
+        max: 3,
+        description: '사업 유지기간 3년 미만 청년 소상공인',
+      },
+      employeeCount: {
+        max: 10,
+        description: '상시근로자 10인 미만 (제조업 외 5인 미만)',
+      },
+      preferredOwnerTypes: ['youth'],
+      additionalRequirements: [
+        '만 39세 이하 청년 대표자',
+        '또는 상시근로자 과반수가 청년',
+        '또는 최근 1년 내 청년 근로자 1명 이상 고용',
+      ],
+      exclusionConditions: [
+        '휴·폐업',
+        '세금 체납',
+        '유흥업종',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 100000000,  // 1억
+        unit: '만원',
+        description: '기업당 1억원 이내',
+      },
+      interestRate: {
+        min: 2.0,
+        max: 3.0,
+        type: 'fixed',
+        description: '연 2.0~3.0% (청년 우대금리)',
+      },
+      loanPeriod: {
+        years: 5,
+        gracePeriod: 2,
+        description: '5년 (거치 2년)',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 2주',
+      requiredDocuments: [
+        '대표자 신분증 (연령 확인)',
+        '사업자등록증',
+        '4대보험 가입자 명부 (청년고용 증빙)',
+      ],
+      applicationMethod: '소진공 지역센터 또는 온라인',
+      contactInfo: '1357',
+    },
+
+    riskFactors: [
+      '청년 기준 연령 확인 필수',
+      '청년 고용 실적 검증',
+    ],
+
+    preferentialConditions: [
+      '청년 대표자 우대금리',
+      '청년 고용 증가 시 추가 우대',
+    ],
+
+    officialUrl: 'https://www.semas.or.kr/web/board/webBoardList.kmdc?bCd=policy_fund',
+
+    meta: {
+      lastUpdated: '2025-01',
+      confidence: 0.85,
+      notes: '청년 고용 창출 연계 정책',
+    },
+  },
+
+  {
+    id: 'kodit-youth-startup-special',
+    institutionId: 'kodit',
+    name: '청년창업특례보증',
+    shortName: '신보 청년창업특례',
+    type: 'guarantee',
+    description: '예비창업자 또는 창업 3년 이내 청년 중소기업 특례보증',
+
+    eligibility: {
+      businessAge: {
+        max: 3,
+        description: '예비창업자 또는 창업 3년 이내',
+      },
+      preferredOwnerTypes: ['youth'],
+      excludedIndustries: ['부동산임대업', '유흥주점업'],
+      additionalRequirements: [
+        '대표자 만 39세 이하',
+        '예비창업자 또는 창업 3년 이내 중소기업',
+      ],
+      exclusionConditions: [
+        '세금 체납',
+        '금융기관 연체',
+        '신용관리정보 등록',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 300000000,  // 3억
+        unit: '억원',
+        description: '동일 차주 3억원 이내 (운전 1억 + 시설 2억)',
+      },
+      guaranteeRatio: {
+        min: 90,
+        max: 100,
+        description: '보증비율 90~100%',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 1주',
+      requiredDocuments: [
+        '사업계획서',
+        '대표자 신분증',
+        '사업자등록증 (있는 경우)',
+      ],
+      applicationMethod: '신보 영업점 또는 온라인',
+      contactInfo: '1588-6565',
+    },
+
+    riskFactors: [
+      '예비창업자는 사업계획 구체성 중요',
+      '대표자 신용등급 영향',
+    ],
+
+    preferentialConditions: [
+      '예비창업자도 보증 가능',
+      '보증료 감면',
+      '보증비율 우대 (90~100%)',
+    ],
+
+    officialUrl: 'https://www.kodit.co.kr/kodit/cm/cntnts/cntntsView.do?mi=3145&cntntsId=11379',
+
+    meta: {
+      lastUpdated: '2025-01',
+      confidence: 0.85,
+      notes: '예비창업자 포함 청년 특례',
     },
   },
 ];

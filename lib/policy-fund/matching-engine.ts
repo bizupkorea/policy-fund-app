@@ -68,6 +68,7 @@ export interface DetailedMatchResult extends MatchResult {
   fundName: string;
   institutionId: string;
   institutionName?: string;
+  officialUrl?: string;  // 공고 원문 URL
 
   isEligible: boolean;
   eligibilityReasons: string[];    // 적합 사유
@@ -497,6 +498,8 @@ export interface ExtendedCompanyProfile extends CompanyPolicyProfile {
   hasPreviousSupport?: boolean;  // 기존 수혜 이력
   isYouthCompany?: boolean;      // 청년기업 여부
   hasExistingLoan?: boolean;     // 기대출 여부
+  // 업력 예외 조건 (청년전용창업자금 업력 확대 등)
+  businessAgeExceptions?: Array<'youth_startup_academy' | 'global_startup_academy' | 'kibo_youth_guarantee' | 'startup_success_package' | 'tips_program'>;
 }
 
 /**
@@ -1123,6 +1126,8 @@ export function convertToKBProfile(
     hasExportExperience: profile.hasExportRevenue,
     hasTechAssets: profile.hasRndActivity,
     isEmergencySituation: false,
+    // 업력 예외 조건 전달
+    businessAgeExceptions: profile.businessAgeExceptions,
   };
 }
 
@@ -1141,6 +1146,7 @@ export function convertToDetailedMatchResult(
     fundName: eligibilityResult.fundName,
     institutionId: eligibilityResult.institutionId,
     institutionName: institution?.name,
+    officialUrl: fund?.officialUrl,
 
     score: eligibilityResult.eligibilityScore,
     level: eligibilityResult.eligibilityScore >= 70 ? 'high' :

@@ -13,11 +13,11 @@ import { MiniDailyBriefing } from '@/components/policy-fund/MiniDailyBriefing';
 const mockPrograms = [
   {
     id: '1',
-    name: '2024년 중소기업 정책자금 (혁신성장자금)',
+    name: '2025년 중소기업 정책자금 (혁신성장자금)',
     category: 'loan' as const,
     executingAgency: '중소벤처기업진흥공단',
     supervisingAgency: '중소벤처기업부',
-    applicationPeriod: '2024.01.02 ~ 2024.12.31',
+    applicationPeriod: '2025.01.02 ~ 2025.12.31',
     detailUrl: 'https://www.kosmes.or.kr',
     supportSummary: '혁신성장 유망 중소기업 운전·시설자금 융자 지원',
     targetSummary: '중소기업 (제조업, 지식서비스업 등)',
@@ -41,7 +41,7 @@ const mockPrograms = [
     category: 'loan' as const,
     executingAgency: '경기신용보증재단',
     supervisingAgency: '경기도',
-    applicationPeriod: '2024.01.15 ~ 2024.12.20',
+    applicationPeriod: '2025.01.15 ~ 2025.12.20',
     detailUrl: 'https://www.gcgf.or.kr',
     supportSummary: '경기도 소재 중소기업 운전자금 보증 지원',
     targetSummary: '경기도 소재 중소기업',
@@ -65,7 +65,7 @@ const mockPrograms = [
     category: 'loan' as const,
     executingAgency: '소상공인시장진흥공단',
     supervisingAgency: '중소벤처기업부',
-    applicationPeriod: '2024.02.01 ~ 2024.11.30',
+    applicationPeriod: '2025.02.01 ~ 2025.11.30',
     detailUrl: 'https://www.semas.or.kr',
     supportSummary: '소상공인 경영안정을 위한 운전자금 융자',
     targetSummary: '소상공인 (상시근로자 5인 미만)',
@@ -89,7 +89,7 @@ const mockPrograms = [
     category: 'guarantee' as const,
     executingAgency: '신용보증기금',
     supervisingAgency: '금융위원회',
-    applicationPeriod: '2024.01.01 ~ 2024.12.31',
+    applicationPeriod: '2025.01.01 ~ 2025.12.31',
     detailUrl: 'https://www.kodit.co.kr',
     supportSummary: '담보력이 부족한 중소기업을 위한 신용보증',
     targetSummary: '중소기업 (전 업종)',
@@ -113,7 +113,7 @@ const mockPrograms = [
     category: 'guarantee' as const,
     executingAgency: '기술보증기금',
     supervisingAgency: '금융위원회',
-    applicationPeriod: '2024.01.01 ~ 2024.12.31',
+    applicationPeriod: '2025.01.01 ~ 2025.12.31',
     detailUrl: 'https://www.kibo.or.kr',
     supportSummary: '기술력 보유 중소기업을 위한 기술평가 기반 보증',
     targetSummary: '기술력 보유 중소기업 (벤처, 이노비즈 등)',
@@ -289,6 +289,68 @@ export default function PolicyFundPage() {
   // 인증 체크박스 변경
   const handleCertificationChange = (key: keyof Certifications) => {
     setCertification(key, !userInput.certifications[key]);
+  };
+
+  // 테스트용 데모 실행
+  const handleDemoAnalyze = async () => {
+    setIsAnalyzing(true);
+    setStatus('extracting');
+    setError(null);
+
+    try {
+      // 가상 기업 데이터
+      const mockExtractedData: ExtractedCompanyData = {
+        companyName: '(주)테스트기업',
+        businessNumber: '123-45-67890',
+        establishedDate: '2020-03-15',
+        industry: '제조업',
+        industryCode: 'C',
+        location: '경기',
+        address: '경기도 성남시 분당구',
+        annualRevenue: 2500000000, // 25억
+        totalAssets: 1500000000,   // 15억
+        totalLiabilities: 500000000, // 5억
+        equity: 1000000000,        // 10억
+        debtRatio: 50,
+        operatingProfit: 300000000, // 3억
+        employeeCount: 15,
+        youthEmployeeCount: 5,
+        hasTaxDelinquency: false,
+        extractedAt: new Date(),
+        confidence: 0.95,
+      };
+
+      setExtractedData(mockExtractedData);
+
+      // 프로필 구축
+      console.log('📊 프로필 구축...');
+      setStatus('matching');
+      const profile = buildProfile();
+
+      if (!profile) {
+        throw new Error('프로필 구축에 실패했습니다.');
+      }
+
+      // 정책자금 프로그램 로드
+      setPrograms(mockPrograms);
+
+      // 매칭 실행
+      console.log('🎯 매칭 실행...');
+      runMatching();
+
+      // Knowledge Base 매칭
+      console.log('🎯 Knowledge Base 매칭 실행...');
+      await runKBMatching();
+
+      // 결과 페이지로 이동
+      router.push('/result');
+    } catch (err) {
+      console.error('데모 분석 실패:', err);
+      setError(err instanceof Error ? err.message : '데모 실행 중 오류가 발생했습니다.');
+      setStatus('error');
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   return (
@@ -778,6 +840,15 @@ export default function PolicyFundPage() {
               <p className="text-center text-sm text-gray-500 mt-4">
                 * 업로드된 서류는 분석 후 즉시 삭제됩니다
               </p>
+
+              {/* 테스트용 데모 버튼 */}
+              <button
+                onClick={handleDemoAnalyze}
+                disabled={isAnalyzing}
+                className="w-full mt-3 py-3 rounded-xl font-medium text-sm border-2 border-dashed border-gray-300 text-gray-500 hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50 transition-all"
+              >
+                테스트용 데모 실행 (가상 데이터)
+              </button>
             </div>
 
             {/* 오른쪽: 미니 브리핑 사이드바 */}

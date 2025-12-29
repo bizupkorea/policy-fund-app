@@ -1,5 +1,6 @@
 'use client';
 
+import { ExternalLink } from 'lucide-react';
 import { DetailedMatchResult } from '@/lib/policy-fund/matching-engine';
 
 // 기관별 배지 색상
@@ -108,7 +109,7 @@ function BestPickCard({ pick, rank }: BestPickCardProps) {
   const mainReason = pick.eligibilityReasons[0] || pick.reasons[0] || '조건 충족';
 
   return (
-    <div className="relative bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200 p-4 hover:shadow-lg transition-shadow">
+    <div className="relative bg-gradient-to-br from-slate-50 to-white rounded-xl border border-slate-200 p-4 hover:shadow-lg transition-shadow h-full flex flex-col">
       {/* 랭크 배지 */}
       <div className="absolute -top-2 -left-2 w-7 h-7 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center shadow-md">
         <span className="text-white text-xs font-bold">{rank}</span>
@@ -134,7 +135,7 @@ function BestPickCard({ pick, rank }: BestPickCardProps) {
       </h4>
 
       {/* 지원 조건 */}
-      <div className="space-y-1.5 mb-3">
+      <div className="space-y-1.5 mb-3 flex-grow">
         {pick.supportDetails?.amount && (
           <div className="flex items-center text-sm">
             <span className="text-slate-500 w-12">한도</span>
@@ -149,11 +150,22 @@ function BestPickCard({ pick, rank }: BestPickCardProps) {
         )}
       </div>
 
-      {/* 추천 사유 - 핵심 포인트 */}
-      <div className="mt-auto pt-3 border-t border-slate-100">
+      {/* 추천 사유 + 공고원문 버튼 (항상 하단 고정) */}
+      <div className="pt-3 border-t border-slate-100 space-y-2">
         <p className="text-xs text-amber-700 bg-amber-50 px-2 py-1.5 rounded-lg">
           💡 {mainReason}
         </p>
+        {pick.officialUrl && (
+          <a
+            href={pick.officialUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1 w-full py-1.5 text-xs font-medium text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+          >
+            공고원문
+            <ExternalLink className="w-3 h-3" />
+          </a>
+        )}
       </div>
     </div>
   );
