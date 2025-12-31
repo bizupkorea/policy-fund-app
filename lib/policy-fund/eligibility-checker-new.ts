@@ -24,6 +24,7 @@ export interface CompanyProfile {
   ceoAge?: number;              // 대표자 나이
   hasTaxDelinquency?: boolean;  // 세금체납 여부
   hasExistingLoan?: boolean;    // 기대출 여부
+  requestedFundingPurpose?: 'working' | 'facility' | 'both';  // 요청 자금용도
   certifications?: {
     venture?: boolean;          // 벤처기업
     innobiz?: boolean;          // 이노비즈
@@ -63,6 +64,12 @@ export interface PolicyEligibilityCriteria {
 
   // 필수 인증
   requiredCertifications?: ('venture' | 'innobiz' | 'mainbiz')[];
+
+  // 자금 용도
+  fundingPurpose?: {
+    working: boolean;   // 운전자금 지원
+    facility: boolean;  // 시설자금 지원
+  };
 }
 
 /**
@@ -410,7 +417,7 @@ function checkExclusions(
 }
 
 /**
- * 필수 인증 체크
+ * 필수 인증 체크 (OR 조건 - 하나라도 보유하면 통과)
  */
 function checkCertifications(
   company: CompanyProfile,
@@ -424,7 +431,6 @@ function checkCertifications(
   }
 
   const certifications = company.certifications || {};
-  const missing: string[] = [];
 
   const certNames: Record<string, string> = {
     venture: '벤처기업',
@@ -432,22 +438,81 @@ function checkCertifications(
     mainbiz: '메인비즈'
   };
 
-  for (const cert of requiredCertifications) {
-    if (!certifications[cert]) {
-      missing.push(certNames[cert] || cert);
-    }
-  }
+  // OR 조건: 필수 인증 중 하나라도 보유하면 통과
+  const hasCert = requiredCertifications.some(cert => certifications[cert]);
 
-  if (missing.length > 0) {
+  if (!hasCert) {
     return {
       passed: false,
-      message: `필수 인증 미보유: ${missing.join(', ')}`
+      message: `필수 인증 미보유: ${requiredCertifications.map(c => certNames[c] || c).join(' 또는 ')} 중 하나 필요`
+    };
+  }
+
+  // 보유한 인증 목록
+  const ownedCerts = requiredCertifications.filter(cert => certifications[cert]);
+
+  return {
+    passed: true,
+    message: `필수 인증 보유: ${ownedCerts.map(c => certNames[c]).join(', ')}`
+  };
+}
+
+/**
+ * 자금 용도 체크
+ */
+function checkFundingPurpose(
+  company: CompanyProfile,
+  criteria: PolicyEligibilityCriteria
+): CheckResult {
+  const { requestedFundingPurpose } = company;
+  const { fundingPurpose } = criteria;
+
+  // 요청 용도가 없으면 체크 스킵
+  if (!requestedFundingPurpose) {
+    return { passed: true, message: '자금 용도 미지정 (전체 대상)' };
+  }
+
+  // 정책자금에 용도 정보가 없으면 체크 스킵
+  if (!fundingPurpose) {
+    return { passed: true, message: '자금 용도 제한 없음' };
+  }
+
+  const purposeNames = {
+    working: '운전자금',
+    facility: '시설자금',
+    both: '운전/시설자금'
+  };
+
+  // 요청 용도에 따라 체크
+  if (requestedFundingPurpose === 'working' && !fundingPurpose.working) {
+    return {
+      passed: false,
+      message: '운전자금 미지원 (시설자금 전용 상품)'
+    };
+  }
+
+  if (requestedFundingPurpose === 'facility' && !fundingPurpose.facility) {
+    return {
+      passed: false,
+      message: '시설자금 미지원 (운전자금 전용 상품)'
+    };
+  }
+
+  // both인 경우 둘 다 지원해야 함
+  if (requestedFundingPurpose === 'both' && (!fundingPurpose.working || !fundingPurpose.facility)) {
+    const supported = [];
+    if (fundingPurpose.working) supported.push('운전자금');
+    if (fundingPurpose.facility) supported.push('시설자금');
+    return {
+      passed: true,  // 일부 지원이므로 통과하지만 경고
+      message: `부분 지원: ${supported.join(', ')}만 가능`,
+      isWarning: true
     };
   }
 
   return {
     passed: true,
-    message: `필수 인증 보유: ${requiredCertifications.map(c => certNames[c]).join(', ')}`
+    message: `${purposeNames[requestedFundingPurpose]} 지원 가능`
   };
 }
 
@@ -480,6 +545,7 @@ export function checkEligibility(
     checkRegion(company, criteria),
     checkExclusions(company, criteria),
     checkCertifications(company, criteria),
+    checkFundingPurpose(company, criteria),
   ];
 
   for (const result of checks) {

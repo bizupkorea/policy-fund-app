@@ -14,7 +14,7 @@
 // ============================================================================
 
 /** 기관 ID */
-export type InstitutionId = 'kosmes' | 'kodit' | 'kibo' | 'semas' | 'seoul_credit' | 'gyeonggi_credit' | 'mss' | 'motie';
+export type InstitutionId = 'kosmes' | 'kodit' | 'kibo' | 'semas' | 'seoul_credit' | 'gyeonggi_credit' | 'mss' | 'motie' | 'keiti';
 
 /** 자금 유형 */
 export type FundType = 'loan' | 'guarantee' | 'grant';
@@ -148,6 +148,12 @@ export interface SupportTerms {
   repaymentMethod?: string;
 }
 
+/** 자금 용도 */
+export interface FundingPurpose {
+  working: boolean;   // 운전자금 지원 여부
+  facility: boolean;  // 시설자금 지원 여부
+}
+
 /** 정책자금 프로그램 */
 export interface PolicyFundKnowledge {
   // 식별자
@@ -159,6 +165,9 @@ export interface PolicyFundKnowledge {
   shortName: string;  // 줄임말
   type: FundType;
   description: string;
+
+  // 자금 용도 (운전/시설)
+  fundingPurpose: FundingPurpose;
 
   // 자격 조건
   eligibility: EligibilityCriteria;
@@ -272,6 +281,14 @@ export const INSTITUTIONS: Record<InstitutionId, InstitutionInfo> = {
     website: 'https://www.motie.go.kr',
     contactNumber: '1577-0900',
   },
+  keiti: {
+    id: 'keiti',
+    name: '환경산업기술원',
+    fullName: '한국환경산업기술원',
+    description: '환경부 산하 환경산업 지원기관',
+    website: 'https://www.keiti.re.kr',
+    contactNumber: '02-2284-1114',
+  },
 };
 
 // ============================================================================
@@ -287,6 +304,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     shortName: '혁신창업',
     type: 'loan',
     description: '창업 초기 기업의 사업화를 위한 시설·운전자금 지원',
+
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
 
     eligibility: {
       businessAge: {
@@ -372,6 +392,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     type: 'loan',
     description: '수출, 내수 확대, 신사업 진출 기업 지원',
 
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
+
     eligibility: {
       businessAge: {
         min: 1,
@@ -439,6 +462,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     type: 'loan',
     description: '경영 위기 상황의 중소기업 긴급 지원',
 
+    // 자금 용도
+    fundingPurpose: { working: true, facility: false },
+
     eligibility: {
       additionalRequirements: [
         '재해·재난 피해 기업',
@@ -497,6 +523,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     shortName: '신보 일반',
     type: 'guarantee',
     description: '담보력 부족 중소기업에 신용보증서 발급',
+
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
 
     eligibility: {
       creditRating: {
@@ -558,6 +587,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     type: 'guarantee',
     description: '창업 초기 기업 전용 신용보증',
 
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
+
     eligibility: {
       businessAge: {
         max: 5,
@@ -606,7 +638,72 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     },
   },
 
-  // ========== 기술보증기금 (2개) ==========
+  // ========== 기술보증기금 (3개) ==========
+  {
+    id: 'kibo-startup',
+    institutionId: 'kibo',
+    name: '창업기업보증',
+    shortName: '기보 창업',
+    type: 'guarantee',
+    description: '창업 7년 이내 중소기업 전용 신용보증',
+
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      businessAge: {
+        max: 7,
+        description: '창업 7년 이내',
+      },
+      revenue: {
+        max: 100000000000,  // 매출 1000억 이하
+        description: '매출 1000억원 이하 중소기업',
+      },
+      excludedIndustries: ['부동산업', '금융업', '유흥업'],
+    },
+
+    terms: {
+      amount: {
+        max: 3000000000,  // 30억
+        unit: '억원',
+        description: '기업당 30억원 이내',
+      },
+      guaranteeRatio: {
+        min: 85,
+        max: 100,
+        description: '보증비율 85~100%',
+      },
+
+    },
+
+    practicalInfo: {
+      processingTime: '1~2주',
+      requiredDocuments: [
+        '사업자등록증',
+        '재무제표',
+        '사업계획서',
+        '법인등기부등본',
+      ],
+    },
+
+    riskFactors: [
+      '신용등급에 따라 보증비율 차등',
+      '업력 7년 초과 시 일반보증으로 전환',
+    ],
+
+    preferentialConditions: [
+      '창업 3년 이내 보증료 감면',
+      '기술창업기업 우대',
+    ],
+
+    officialUrl: 'https://www.kibo.or.kr',
+
+    meta: {
+      lastUpdated: '2025-01',
+      confidence: 0.9,
+    },
+  },
+
   {
     id: 'kibo-tech-evaluation',
     institutionId: 'kibo',
@@ -614,6 +711,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     shortName: '기보 기술평가',
     type: 'guarantee',
     description: '기술력 보유 기업에 기술평가 기반 보증',
+
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
 
     eligibility: {
       additionalRequirements: [
@@ -670,6 +770,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     shortName: '기보 스타트업',
     type: 'guarantee',
     description: '벤처·이노비즈 인증 기업 전용 보증',
+
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
 
     eligibility: {
       requiredCertifications: ['venture', 'innobiz'],
@@ -728,6 +831,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     type: 'loan',
     description: '상시근로자 10인 미만 제조업체 전용',
 
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
+
     eligibility: {
       employeeCount: {
         max: 10,
@@ -783,6 +889,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     shortName: '성장촉진',
     type: 'loan',
     description: '성장 단계 소상공인 지원',
+
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
 
     eligibility: {
       employeeCount: {
@@ -844,6 +953,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     type: 'loan',
     description: '재해·경영위기 소상공인 긴급 지원',
 
+    // 자금 용도
+    fundingPurpose: { working: true, facility: false },
+
     eligibility: {
       additionalRequirements: [
         '재해 피해 소상공인',
@@ -897,14 +1009,17 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     type: 'loan',
     description: '투자유치 기업에 투자금액 연계 융자 지원',
 
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
+
     eligibility: {
       businessAge: {
         min: 3,
         description: '업력 3년 이상',
       },
       revenue: {
-        min: 3000000000,  // 30억
-        description: '연매출 30억원 이상',
+        min: 500000000,  // 5억
+        description: '연매출 5억원 이상',
       },
       additionalRequirements: [
         '최근 2년 내 벤처투자 유치 기업',
@@ -973,6 +1088,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     shortName: '재창업',
     type: 'loan',
     description: '실패 경험 재창업자 사업화 지원',
+
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
 
     eligibility: {
       businessAge: {
@@ -1045,6 +1163,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     type: 'loan',
     description: '스마트공장 구축·고도화 시설자금 지원',
 
+    // 자금 용도
+    fundingPurpose: { working: false, facility: true },
+
     eligibility: {
       allowedIndustries: ['manufacturing'],
       additionalRequirements: [
@@ -1113,6 +1234,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     type: 'loan',
     description: 'ESG·탄소중립 관련 시설투자 지원',
 
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
+
     eligibility: {
       additionalRequirements: [
         '탄소저감 시설 투자 계획',
@@ -1179,6 +1303,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     shortName: '경영안정',
     type: 'loan',
     description: '일반 중소기업 운전·시설자금 지원',
+
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
 
     eligibility: {
       businessAge: {
@@ -1250,6 +1377,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     type: 'guarantee',
     description: '매출채권 등 자산유동화를 통한 자금조달 지원',
 
+    // 자금 용도
+    fundingPurpose: { working: true, facility: false },
+
     eligibility: {
       businessAge: {
         min: 2,
@@ -1316,6 +1446,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     type: 'guarantee',
     description: '4차산업혁명 관련 혁신기업 전용 보증',
 
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
+
     eligibility: {
       additionalRequirements: [
         '4차산업혁명 관련 업종 (AI, 빅데이터, IoT 등)',
@@ -1372,6 +1505,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     shortName: '신보 일자리',
     type: 'guarantee',
     description: '고용 확대 기업에 보증 우대 지원',
+
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
 
     eligibility: {
       additionalRequirements: [
@@ -1433,6 +1569,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     type: 'guarantee',
     description: '수출 실적 또는 수출 계획 기업 전용 보증',
 
+    // 자금 용도
+    fundingPurpose: { working: true, facility: false },
+
     eligibility: {
       additionalRequirements: [
         '수출 실적 보유 기업',
@@ -1491,6 +1630,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     type: 'guarantee',
     description: '특허, 실용신안 등 지식재산권 담보 보증',
 
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
+
     eligibility: {
       additionalRequirements: [
         '특허권, 실용신안권 보유',
@@ -1546,6 +1688,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     shortName: '기보 R&D',
     type: 'guarantee',
     description: '연구개발 투자 기업 전용 보증',
+
+    // 자금 용도
+    fundingPurpose: { working: true, facility: false },
 
     eligibility: {
       additionalRequirements: [
@@ -1603,6 +1748,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     type: 'guarantee',
     description: '게임, 영상, 음악, 공연 등 문화콘텐츠 기업 전용',
 
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
+
     eligibility: {
       allowedIndustries: ['it_service', 'other_service'],
       additionalRequirements: [
@@ -1659,6 +1807,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     shortName: '기보 예비창업',
     type: 'guarantee',
     description: '법인설립 전 예비창업자 사업화 자금 보증',
+
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
 
     eligibility: {
       businessAge: {
@@ -1721,6 +1872,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     shortName: '소진공 일반',
     type: 'loan',
     description: '일반 소상공인 운전자금 지원',
+
+    // 자금 용도
+    fundingPurpose: { working: true, facility: false },
 
     eligibility: {
       employeeCount: {
@@ -1789,6 +1943,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     type: 'loan',
     description: '장애인 대표 소상공인 전용 지원',
 
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
+
     eligibility: {
       preferredOwnerTypes: ['disabled'],
       additionalRequirements: [
@@ -1850,6 +2007,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     shortName: '청년소상공인',
     type: 'loan',
     description: '청년 소상공인 또는 청년 고용 소상공인 지원',
+
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
 
     eligibility: {
       preferredOwnerTypes: ['youth'],
@@ -1914,6 +2074,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     shortName: '서울신보 일반',
     type: 'guarantee',
     description: '서울 소재 소기업·소상공인 신용보증',
+
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
 
     eligibility: {
       allowedRegions: ['서울'],
@@ -1982,6 +2145,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     type: 'guarantee',
     description: '경기도 소재 소기업·소상공인 신용보증',
 
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
+
     eligibility: {
       allowedRegions: ['경기'],
       employeeCount: {
@@ -2048,6 +2214,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     shortName: '창성패 연계',
     type: 'loan',
     description: '창업성공패키지 선정기업 후속 연계 자금',
+
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
 
     eligibility: {
       businessAge: {
@@ -2116,6 +2285,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     type: 'loan',
     description: '산업기술 R&D 투자 기업 지원',
 
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
+
     eligibility: {
       additionalRequirements: [
         '산업기술 R&D 과제 수행 기업',
@@ -2172,6 +2344,155 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     },
   },
 
+
+  // ========== 환경부/KEITI (2개) ==========
+  {
+    id: 'keiti-env-growth',
+    institutionId: 'keiti',
+    name: '미래환경산업육성융자 (성장기반)',
+    shortName: '환경성장자금',
+    type: 'loan',
+    description: '환경산업체의 성장기반 구축을 위한 운전자금 지원',
+
+    // 자금 용도
+    fundingPurpose: { working: true, facility: false },
+
+    eligibility: {
+      businessAge: {
+        description: '제한 없음',
+      },
+      revenue: {
+        max: 150000000000,  // 1,500억 (중견기업 포함)
+        description: '중소·중견기업',
+      },
+      allowedIndustries: ['manufacturing', 'it_service', 'other_service'],
+      excludedIndustries: ['부동산업', '금융업', '유흥업'],
+      additionalRequirements: [
+        '환경산업체 등록 기업',
+        '환경기술 관련 사업 영위',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 1000000000,  // 10억
+        unit: '억원',
+        description: '기업당 10억원 이내',
+      },
+      interestRate: {
+        min: 2.0,
+        max: 3.5,
+        type: 'variable',
+        description: '분기별 변동금리',
+      },
+      loanPeriod: {
+        years: 5,
+        gracePeriod: 2,
+        description: '5년 (거치 2년)',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 3~4주',
+      requiredDocuments: [
+        '환경산업체 등록증',
+        '사업계획서',
+        '재무제표',
+      ],
+    },
+
+    riskFactors: [
+      '환경산업체 등록 필수',
+    ],
+
+    preferentialConditions: [
+      '우수환경산업체 우대',
+      '녹색인증기업 우대',
+    ],
+
+    officialUrl: 'https://www.keiti.re.kr',
+
+    meta: {
+      lastUpdated: '2025-01',
+      confidence: 0.85,
+      notes: '환경부 미래환경산업육성융자 - 성장기반자금',
+    },
+  },
+
+  {
+    id: 'keiti-env-facility',
+    institutionId: 'keiti',
+    name: '미래환경산업육성융자 (시설설치)',
+    shortName: '환경시설자금',
+    type: 'loan',
+    description: '환경오염방지시설, 온실가스저감설비 설치 지원',
+
+    // 자금 용도
+    fundingPurpose: { working: false, facility: true },
+
+    eligibility: {
+      businessAge: {
+        description: '제한 없음',
+      },
+      revenue: {
+        max: 150000000000,  // 1,500억 (중견기업 포함)
+        description: '중소·중견기업',
+      },
+      allowedIndustries: ['manufacturing', 'it_service', 'construction', 'other_service'],
+      excludedIndustries: ['부동산업', '금융업', '유흥업'],
+      additionalRequirements: [
+        '환경오염방지시설 또는 온실가스저감설비 설치 계획',
+        '시설투자 계획서 제출',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 10000000000,  // 100억
+        unit: '억원',
+        description: '기업당 100억원 이내',
+      },
+      interestRate: {
+        min: 2.0,
+        max: 3.5,
+        type: 'variable',
+        description: '분기별 변동금리',
+      },
+      loanPeriod: {
+        years: 10,
+        gracePeriod: 3,
+        description: '10년 (거치 3년)',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 4~6주',
+      requiredDocuments: [
+        '시설투자 계획서',
+        '환경개선 효과 분석',
+        '재무제표',
+      ],
+    },
+
+    riskFactors: [
+      '시설투자 계획 심사',
+      '환경개선 효과 평가',
+    ],
+
+    preferentialConditions: [
+      '탄소중립 설비투자 우대',
+      '녹색전환 사업 우대',
+    ],
+
+    officialUrl: 'https://www.keiti.re.kr',
+
+    meta: {
+      lastUpdated: '2025-01',
+      confidence: 0.85,
+      notes: '환경부 미래환경산업육성융자 - 시설설치/온실가스저감',
+    },
+  },
+
   // ========== 청년 전용 정책자금 (5개) ==========
   {
     id: 'kosmes-youth-startup',
@@ -2180,6 +2501,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     shortName: '청년창업',
     type: 'loan',
     description: '만 39세 이하 청년 대표자의 창업 초기 기업 전용 저금리 융자',
+
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
 
     eligibility: {
       businessAge: {
@@ -2274,6 +2598,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     type: 'guarantee',
     description: '17~39세 청년 대표자 창업기업 전용 고보증비율 상품',
 
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
+
     eligibility: {
       businessAge: {
         max: 7,
@@ -2345,6 +2672,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     type: 'guarantee',
     description: '우수 기술력 보유 청년 창업기업 전용 프리미엄 보증',
 
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
+
     eligibility: {
       businessAge: {
         max: 7,
@@ -2414,6 +2744,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     shortName: '청년고용연계',
     type: 'loan',
     description: '청년 소상공인 또는 청년 고용 소상공인 전용 자금',
+
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
 
     eligibility: {
       businessAge: {
@@ -2493,6 +2826,9 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     shortName: '신보 청년창업특례',
     type: 'guarantee',
     description: '예비창업자 또는 창업 3년 이내 청년 중소기업 특례보증',
+
+    // 자금 용도
+    fundingPurpose: { working: true, facility: true },
 
     eligibility: {
       businessAge: {

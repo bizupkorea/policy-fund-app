@@ -14,6 +14,7 @@ import {
   CompanyScale,
   OwnerCharacteristic,
   BusinessAgeException,
+  FundingPurpose,
   POLICY_FUND_KNOWLEDGE_BASE,
 } from './knowledge-base';
 
@@ -65,6 +66,9 @@ export interface CompanyProfile {
 
   // 업력 예외 조건 (청창사 졸업 등)
   businessAgeExceptions?: BusinessAgeException[];
+
+  // 자금 용도 (운전/시설/둘다)
+  requestedFundingPurpose?: 'working' | 'facility' | 'both';
 }
 
 /** 자격 체크 결과 */
@@ -222,6 +226,21 @@ export function checkFundEligibility(
       passedConditions.push(exportCheck);
     } else if (exportCheck.status === 'warning') {
       warningConditions.push(exportCheck);
+    }
+  }
+
+  // 자금 용도 체크
+  if (profile.requestedFundingPurpose && fund.fundingPurpose) {
+    const purposeCheck = checkFundingPurpose(
+      profile.requestedFundingPurpose,
+      fund.fundingPurpose
+    );
+    if (purposeCheck.status === 'pass') {
+      passedConditions.push(purposeCheck);
+    } else if (purposeCheck.status === 'fail') {
+      failedConditions.push(purposeCheck);
+    } else if (purposeCheck.status === 'warning') {
+      warningConditions.push(purposeCheck);
     }
   }
 
@@ -585,6 +604,60 @@ function checkExportRequirement(hasExportExperience?: boolean): CheckResult {
     status: 'warning',
     description: '수출실적 또는 수출계획 필요 (미보유 시 신청 불가)',
     impact: -15,
+  };
+}
+
+/**
+ * 자금 용도 체크
+ */
+function checkFundingPurpose(
+  requested: 'working' | 'facility' | 'both',
+  supported: FundingPurpose
+): CheckResult {
+  const purposeNames = {
+    working: '운전자금',
+    facility: '시설자금',
+    both: '운전/시설자금'
+  };
+
+  // 운전자금 요청인데 운전자금 미지원
+  if (requested === 'working' && !supported.working) {
+    return {
+      condition: '자금 용도',
+      status: 'fail',
+      description: '운전자금 미지원 (시설자금 전용 상품)',
+      impact: -100,
+    };
+  }
+
+  // 시설자금 요청인데 시설자금 미지원
+  if (requested === 'facility' && !supported.facility) {
+    return {
+      condition: '자금 용도',
+      status: 'fail',
+      description: '시설자금 미지원 (운전자금 전용 상품)',
+      impact: -100,
+    };
+  }
+
+  // 둘 다 요청인데 부분 지원
+  if (requested === 'both' && (!supported.working || !supported.facility)) {
+    const supportedPurposes = [];
+    if (supported.working) supportedPurposes.push('운전자금');
+    if (supported.facility) supportedPurposes.push('시설자금');
+    return {
+      condition: '자금 용도',
+      status: 'warning',
+      description: `부분 지원: ${supportedPurposes.join(', ')}만 가능`,
+      impact: -10,
+    };
+  }
+
+  return {
+    condition: '자금 용도',
+    status: 'pass',
+    description: `${purposeNames[requested]} 지원 가능`,
+    impact: 5,
   };
 }
 

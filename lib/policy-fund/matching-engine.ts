@@ -500,6 +500,13 @@ export interface ExtendedCompanyProfile extends CompanyPolicyProfile {
   hasExistingLoan?: boolean;     // 기대출 여부
   // 업력 예외 조건 (청년전용창업자금 업력 확대 등)
   businessAgeExceptions?: Array<'youth_startup_academy' | 'global_startup_academy' | 'kibo_youth_guarantee' | 'startup_success_package' | 'tips_program'>;
+  // 성장 전략 및 투자 계획
+  hasIpoOrInvestmentPlan?: boolean;  // IPO/투자유치 계획
+  acceptsEquityDilution?: boolean;   // 지분 희석 감수 가능
+  needsLargeFunding?: boolean;       // 대규모 자금 필요 (5억+)
+  requiredFundingAmount?: number;    // 필요 자금 (억원)
+  // 자금 용도
+  requestedFundingPurpose?: 'working' | 'facility' | 'both';
 }
 
 /**
@@ -1073,29 +1080,44 @@ import {
 export function convertToKBProfile(
   profile: ExtendedCompanyProfile
 ): KBCompanyProfile {
-  // 업종 매핑
+  // 업종 매핑 (12개 세분화 업종 → KB IndustryCategory)
   const industryMap: Record<string, IndustryCategory> = {
+    // 테스트 페이지 12개 업종
+    'manufacturing_general': 'manufacturing',
+    'manufacturing_root': 'manufacturing',     // 뿌리/소부장 (정부 우대)
+    'it_software': 'it_service',
+    'it_hardware': 'manufacturing',            // HW는 제조업 분류
+    'knowledge_service': 'it_service',         // 지식서비스
+    'bio_healthcare': 'manufacturing',         // 바이오는 제조업 분류
+    'future_mobility': 'manufacturing',        // 미래차/로봇은 제조업 분류
+    'culture_content': 'it_service',           // 문화콘텐츠는 지식서비스 분류
+    'construction_energy': 'construction',
+    'wholesale_retail': 'wholesale_retail',
+    'tourism_food': 'food_service',
+    'other_service': 'other_service',
+    // 기존 키워드 매핑 (하위 호환)
     '제조': 'manufacturing',
-    '제조업': 'manufacturing',
     'IT': 'it_service',
-    '정보통신': 'it_service',
-    '소프트웨어': 'it_service',
     '도소매': 'wholesale_retail',
-    '유통': 'wholesale_retail',
     '음식': 'food_service',
-    '식품': 'food_service',
     '건설': 'construction',
     '물류': 'logistics',
-    '운수': 'logistics',
-    '서비스': 'other_service',
   };
 
   let industry: IndustryCategory = 'other_service';
-  const companyIndustry = (profile.industryName || profile.industry).toLowerCase();
-  for (const [key, value] of Object.entries(industryMap)) {
-    if (companyIndustry.includes(key)) {
-      industry = value;
-      break;
+  const companyIndustry = profile.industryName || profile.industry || '';
+  
+  // 직접 매핑 먼저 시도
+  if (industryMap[companyIndustry]) {
+    industry = industryMap[companyIndustry];
+  } else {
+    // 키워드 검색
+    const lowerIndustry = companyIndustry.toLowerCase();
+    for (const [key, value] of Object.entries(industryMap)) {
+      if (lowerIndustry.includes(key)) {
+        industry = value;
+        break;
+      }
     }
   }
 
@@ -1188,14 +1210,56 @@ export async function matchWithKnowledgeBase(
   const kbProfile = convertToKBProfile(profile);
 
   // 자격 체크 수행
-  const eligibilityResults = checkAllFundsEligibility(kbProfile);
+  let eligibilityResults = checkAllFundsEligibility(kbProfile);
 
-  // 결과 변환
+  // 투융자복합금융 필터링: 둘 중 하나라도 체크되면 포함
+  if (!profile.hasIpoOrInvestmentPlan && !profile.acceptsEquityDilution) {
+    eligibilityResults = eligibilityResults.filter(r => r.fundId !== 'kosmes-investment-loan');
+  }
+
+  // 유동화회사보증(P-CBO) 필터링: 대규모 자금 필요 체크 시에만 포함
+  if (!profile.needsLargeFunding) {
+    eligibilityResults = eligibilityResults.filter(r => r.fundId !== 'kodit-securitization');
+  }
+
+  // 결과 변환 (자금 규모별 매칭 보너스 적용)
   const results: DetailedMatchResult[] = eligibilityResults
     .slice(0, topN)
     .map(result => {
       const fund = POLICY_FUND_KNOWLEDGE_BASE.find(f => f.id === result.fundId);
-      return convertToDetailedMatchResult(result, fund);
+      const detailedResult = convertToDetailedMatchResult(result, fund);
+
+      // 자금 규모별 보너스 점수
+      if (profile.requiredFundingAmount && profile.requiredFundingAmount > 0 && fund) {
+        const requiredAmount = profile.requiredFundingAmount * 100000000; // 억원 -> 원
+        const fundMaxAmount = fund.terms.amount.max;
+
+        if (fundMaxAmount) {
+          if (requiredAmount <= fundMaxAmount) {
+            // 자금 한도 내: +5점 보너스
+            detailedResult.score = Math.min(100, detailedResult.score + 5);
+            detailedResult.eligibilityReasons.push(`필요 자금 (${profile.requiredFundingAmount}억) 한도 충족`);
+          } else {
+            // 자금 한도 초과: 경고 추가
+            const fundMaxInBillion = Math.round(fundMaxAmount / 100000000);
+            detailedResult.warnings.push(`필요 자금 초과 (한도: ${fundMaxInBillion}억원)`);
+          }
+        }
+
+        // 대규모 자금 필요 시 특수 자금 우대 (10억+)
+        if (profile.requiredFundingAmount >= 10) {
+          if (result.fundId === 'kodit-securitization' || result.fundId === 'kosmes-investment-loan') {
+            detailedResult.score = Math.min(100, detailedResult.score + 5);
+            detailedResult.eligibilityReasons.push('대규모 자금 조달에 적합');
+          }
+        }
+      }
+
+      // 레벨 재계산
+      detailedResult.level = detailedResult.score >= 70 ? 'high' :
+                             detailedResult.score >= 40 ? 'medium' : 'low';
+
+      return detailedResult;
     });
 
   // AI 분석 (옵션)

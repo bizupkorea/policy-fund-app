@@ -11,7 +11,19 @@ import { matchWithKnowledgeBase, ExtendedCompanyProfile, DetailedMatchResult } f
 interface TestProfile {
   // 기본 정보
   companyName: string;
-  industry: 'manufacturing' | 'it_service' | 'wholesale_retail' | 'food_service' | 'construction' | 'logistics' | 'other_service';
+  industry:
+    | 'manufacturing_general'    // 제조업 (일반)
+    | 'manufacturing_root'       // 제조업 (뿌리/소부장) - 정부 우대
+    | 'it_software'              // IT/정보통신 (SW)
+    | 'it_hardware'              // IT/정보통신 (HW)
+    | 'knowledge_service'        // 지식서비스업
+    | 'bio_healthcare'           // 바이오/헬스케어
+    | 'future_mobility'          // 미래차/로봇/드론
+    | 'culture_content'          // 문화/콘텐츠
+    | 'construction_energy'      // 건설/환경/에너지
+    | 'wholesale_retail'         // 도소매/유통
+    | 'tourism_food'             // 관광/숙박/음식
+    | 'other_service';           // 기타 서비스업
   location: string;
   establishedYear: number;
 
@@ -42,6 +54,13 @@ interface TestProfile {
   isYouthStartupAcademyGrad: boolean; // 청년창업사관학교 졸업
   isGlobalStartupAcademyGrad: boolean; // 글로벌창업사관학교 졸업
   hasKiboYouthGuarantee: boolean; // 기보 청년창업우대보증 지원
+
+  // 성장 전략 및 투자 계획
+  hasIpoOrInvestmentPlan: boolean;  // IPO/투자유치 계획
+  acceptsEquityDilution: boolean;   // 지분 희석 감수 가능
+  needsLargeFunding: boolean;       // 대규모 자금 필요 (5억+)
+  requiredFundingAmount: number;    // 필요 자금 (억원)
+  fundingPurpose: 'working' | 'facility' | 'both';  // 자금 용도
 }
 
 interface PresetScenario {
@@ -64,7 +83,7 @@ const PRESET_SCENARIOS: PresetScenario[] = [
     emoji: '🚀',
     profile: {
       companyName: '(주)청년테크',
-      industry: 'manufacturing',
+      industry: 'manufacturing_general',
       location: '경기',
       establishedYear: 2022,
       annualRevenue: 25,
@@ -85,6 +104,11 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
+      hasIpoOrInvestmentPlan: false,
+      acceptsEquityDilution: false,
+      needsLargeFunding: false,
+      requiredFundingAmount: 3,
+          fundingPurpose: 'both',
     },
   },
   {
@@ -94,7 +118,7 @@ const PRESET_SCENARIOS: PresetScenario[] = [
     emoji: '🎓',
     profile: {
       companyName: '(주)청창사테크',
-      industry: 'it_service',
+      industry: 'it_software',
       location: '서울',
       establishedYear: 2020,  // 업력 5년
       annualRevenue: 15,
@@ -115,6 +139,11 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       isYouthStartupAcademyGrad: true,  // 청창사 졸업 예외 적용
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
+      hasIpoOrInvestmentPlan: false,
+      acceptsEquityDilution: false,
+      needsLargeFunding: false,
+      requiredFundingAmount: 5,
+          fundingPurpose: 'both',
     },
   },
   {
@@ -124,7 +153,7 @@ const PRESET_SCENARIOS: PresetScenario[] = [
     emoji: '🔧',
     profile: {
       companyName: '(주)정밀가공',
-      industry: 'manufacturing',
+      industry: 'manufacturing_root',
       location: '서울',
       establishedYear: 2017,
       annualRevenue: 3,
@@ -145,6 +174,11 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
+      hasIpoOrInvestmentPlan: false,
+      acceptsEquityDilution: false,
+      needsLargeFunding: false,
+      requiredFundingAmount: 1,
+          fundingPurpose: 'both',
     },
   },
   {
@@ -154,7 +188,7 @@ const PRESET_SCENARIOS: PresetScenario[] = [
     emoji: '🌏',
     profile: {
       companyName: '(주)글로벌테크',
-      industry: 'manufacturing',
+      industry: 'manufacturing_general',
       location: '인천',
       establishedYear: 2018,
       annualRevenue: 100,
@@ -175,6 +209,11 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
+      hasIpoOrInvestmentPlan: false,
+      acceptsEquityDilution: false,
+      needsLargeFunding: false,
+      requiredFundingAmount: 5,
+          fundingPurpose: 'both',
     },
   },
   {
@@ -184,7 +223,7 @@ const PRESET_SCENARIOS: PresetScenario[] = [
     emoji: '🔬',
     profile: {
       companyName: '(주)테크연구소',
-      industry: 'manufacturing',
+      industry: 'knowledge_service',
       location: '대전',
       establishedYear: 2020,
       annualRevenue: 30,
@@ -205,6 +244,11 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
+      hasIpoOrInvestmentPlan: false,
+      acceptsEquityDilution: false,
+      needsLargeFunding: false,
+      requiredFundingAmount: 10,
+          fundingPurpose: 'both',
     },
   },
   {
@@ -214,7 +258,7 @@ const PRESET_SCENARIOS: PresetScenario[] = [
     emoji: '🏭',
     profile: {
       companyName: '(주)스마트제조',
-      industry: 'manufacturing',
+      industry: 'manufacturing_root',
       location: '경기',
       establishedYear: 2015,
       annualRevenue: 80,
@@ -235,6 +279,11 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
+      hasIpoOrInvestmentPlan: false,
+      acceptsEquityDilution: false,
+      needsLargeFunding: false,
+      requiredFundingAmount: 8,
+          fundingPurpose: 'both',
     },
   },
   {
@@ -244,7 +293,7 @@ const PRESET_SCENARIOS: PresetScenario[] = [
     emoji: '🔄',
     profile: {
       companyName: '(주)재도전',
-      industry: 'manufacturing',
+      industry: 'manufacturing_general',
       location: '서울',
       establishedYear: 2023,
       annualRevenue: 5,
@@ -265,6 +314,11 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
+      hasIpoOrInvestmentPlan: false,
+      acceptsEquityDilution: false,
+      needsLargeFunding: false,
+      requiredFundingAmount: 3,
+          fundingPurpose: 'both',
     },
   },
   {
@@ -274,7 +328,7 @@ const PRESET_SCENARIOS: PresetScenario[] = [
     emoji: '⚠️',
     profile: {
       companyName: '(주)경영위기',
-      industry: 'manufacturing',
+      industry: 'manufacturing_general',
       location: '경기',
       establishedYear: 2020,
       annualRevenue: 20,
@@ -295,19 +349,29 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
+      hasIpoOrInvestmentPlan: false,
+      acceptsEquityDilution: false,
+      needsLargeFunding: false,
+      requiredFundingAmount: 2,
+          fundingPurpose: 'both',
     },
   },
 ];
 
-// 업종 옵션
+// 업종 옵션 (정책자금 우대 산업 기준 세분화)
 const INDUSTRY_OPTIONS = [
-  { value: 'manufacturing', label: '제조업' },
-  { value: 'it_service', label: 'IT/지식서비스업' },
-  { value: 'wholesale_retail', label: '도소매업' },
-  { value: 'food_service', label: '음식점업' },
-  { value: 'construction', label: '건설업' },
-  { value: 'logistics', label: '운수/물류업' },
-  { value: 'other_service', label: '기타 서비스업' },
+  { value: 'manufacturing_general', label: '제조업 (일반)', desc: '식음료, 의류, 가구 등' },
+  { value: 'manufacturing_root', label: '제조업 (뿌리/소부장)', desc: '금형, 주조, 용접, 소재, 부품, 장비 - 정부 우대' },
+  { value: 'it_software', label: 'IT/정보통신 (SW)', desc: '소프트웨어, 앱, SI, 플랫폼' },
+  { value: 'it_hardware', label: 'IT/정보통신 (HW)', desc: '반도체, 통신장비, 전자부품' },
+  { value: 'knowledge_service', label: '지식서비스업', desc: '디자인, 컨설팅, R&D, 광고' },
+  { value: 'bio_healthcare', label: '바이오/헬스케어', desc: '의약품, 의료기기, 화장품, 건기식' },
+  { value: 'future_mobility', label: '미래차/로봇/드론', desc: '자율주행, 전기차부품, 로봇' },
+  { value: 'culture_content', label: '문화/콘텐츠', desc: '게임, 영상, 웹툰, 출판' },
+  { value: 'construction_energy', label: '건설/환경/에너지', desc: '전문건설, 태양광, 친환경' },
+  { value: 'wholesale_retail', label: '도소매/유통', desc: '일반 도소매, 전자상거래' },
+  { value: 'tourism_food', label: '관광/숙박/음식', desc: '숙박업, 음식점, 여행업' },
+  { value: 'other_service', label: '기타 서비스업', desc: '그 외 서비스' },
 ];
 
 // 지역 옵션
@@ -408,6 +472,13 @@ export default function TestPage() {
           ...(profile.isGlobalStartupAcademyGrad ? ['global_startup_academy' as const] : []),
           ...(profile.hasKiboYouthGuarantee ? ['kibo_youth_guarantee' as const] : []),
         ],
+        // 성장 전략 및 투자 계획
+        hasIpoOrInvestmentPlan: profile.hasIpoOrInvestmentPlan,
+        acceptsEquityDilution: profile.acceptsEquityDilution,
+        needsLargeFunding: profile.needsLargeFunding,
+        requiredFundingAmount: profile.requiredFundingAmount,
+        // 자금 용도
+        requestedFundingPurpose: profile.fundingPurpose,
       };
 
       const result = await matchWithKnowledgeBase(extendedProfile, {
@@ -525,28 +596,52 @@ export default function TestPage() {
               </h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    연매출 <span className="text-orange-500 font-bold">{profile.annualRevenue}억원</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-medium text-gray-600">연매출</label>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        value={profile.annualRevenue}
+                        onChange={e => updateProfile('annualRevenue', Math.max(0, Math.min(500, parseFloat(e.target.value) || 0)))}
+                        min={0}
+                        max={500}
+                        step={0.5}
+                        className="w-20 px-2 py-1 text-sm text-right border border-gray-300 rounded focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+                      />
+                      <span className="text-xs text-gray-500">억원</span>
+                    </div>
+                  </div>
                   <input
                     type="range"
                     value={profile.annualRevenue}
-                    onChange={e => updateProfile('annualRevenue', parseInt(e.target.value))}
-                    min={1}
+                    onChange={e => updateProfile('annualRevenue', parseFloat(e.target.value))}
+                    min={0}
                     max={500}
-                    step={1}
+                    step={0.5}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
                   />
                   <div className="flex justify-between text-xs text-gray-400 mt-1">
-                    <span>1억</span>
+                    <span>0</span>
                     <span>500억</span>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    직원수 <span className="text-orange-500 font-bold">{profile.employeeCount}명</span>
-                    <span className="ml-2 text-gray-400">({getCompanySize() === 'startup' ? '소공인' : getCompanySize() === 'small' ? '소기업' : getCompanySize() === 'medium' ? '중기업' : '중견기업'})</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-medium text-gray-600">
+                      직원수 <span className="text-gray-400">({getCompanySize() === 'startup' ? '소공인' : getCompanySize() === 'small' ? '소기업' : getCompanySize() === 'medium' ? '중기업' : '중견기업'})</span>
+                    </label>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        value={profile.employeeCount}
+                        onChange={e => updateProfile('employeeCount', Math.max(1, Math.min(300, parseInt(e.target.value) || 1)))}
+                        min={1}
+                        max={300}
+                        className="w-20 px-2 py-1 text-sm text-right border border-gray-300 rounded focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+                      />
+                      <span className="text-xs text-gray-500">명</span>
+                    </div>
+                  </div>
                   <input
                     type="range"
                     value={profile.employeeCount}
@@ -562,9 +657,20 @@ export default function TestPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    부채비율 <span className="text-orange-500 font-bold">{profile.debtRatio}%</span>
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-medium text-gray-600">부채비율</label>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        value={profile.debtRatio}
+                        onChange={e => updateProfile('debtRatio', Math.max(0, Math.min(500, parseInt(e.target.value) || 0)))}
+                        min={0}
+                        max={500}
+                        className="w-20 px-2 py-1 text-sm text-right border border-gray-300 rounded focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+                      />
+                      <span className="text-xs text-gray-500">%</span>
+                    </div>
+                  </div>
                   <input
                     type="range"
                     value={profile.debtRatio}
@@ -592,6 +698,7 @@ export default function TestPage() {
                   { key: 'hasPatent', label: '특허 보유' },
                   { key: 'hasResearchInstitute', label: '기업부설연구소' },
                   { key: 'hasExportRecord', label: '수출 실적' },
+                  { key: 'isFemale', label: '여성기업 인증' },
                 ].map(cert => (
                   <label key={cert.key} className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -682,10 +789,108 @@ export default function TestPage() {
               </div>
             </div>
 
+            {/* 성장 전략 및 투자 계획 */}
+            <div className="bg-white rounded-xl shadow-sm p-5">
+              <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <span className="w-6 h-6 bg-cyan-100 text-cyan-600 rounded-full flex items-center justify-center text-xs">6</span>
+                성장 전략 및 투자 계획
+              </h3>
+              <div className="space-y-3">
+                <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={profile.hasIpoOrInvestmentPlan}
+                    onChange={e => updateProfile('hasIpoOrInvestmentPlan', e.target.checked)}
+                    className="w-4 h-4 mt-0.5 rounded border-gray-300 text-cyan-500 focus:ring-cyan-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">IPO(상장) 또는 외부 투자 유치 계획 있음</span>
+                    <p className="text-xs text-gray-400 mt-0.5">VC, 엔젤투자, 시리즈 투자 등</p>
+                  </div>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={profile.acceptsEquityDilution}
+                    onChange={e => updateProfile('acceptsEquityDilution', e.target.checked)}
+                    className="w-4 h-4 mt-0.5 rounded border-gray-300 text-cyan-500 focus:ring-cyan-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">대규모 자금 조달을 위해 지분 희석 감수 가능</span>
+                    <p className="text-xs text-gray-400 mt-0.5">CB(전환사채), RCPS(상환전환우선주) 등 주식 전환 조건 수용</p>
+                  </div>
+                </label>
+                <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={profile.needsLargeFunding}
+                    onChange={e => updateProfile('needsLargeFunding', e.target.checked)}
+                    className="w-4 h-4 mt-0.5 rounded border-gray-300 text-cyan-500 focus:ring-cyan-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">대규모 자금 필요 (5억원 이상)</span>
+                    <p className="text-xs text-gray-400 mt-0.5">P-CBO, 유동화 보증 등 대형 자금조달 상품 검토</p>
+                  </div>
+                </label>
+                <div className="p-3 rounded-lg border border-gray-200 bg-gray-50">
+                  <div className="flex items-center gap-3">
+                    <label className="text-sm font-medium text-gray-700 whitespace-nowrap">필요 자금</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={profile.requiredFundingAmount}
+                        onChange={e => {
+                          const amount = Number(e.target.value);
+                          setProfile(prev => ({
+                            ...prev,
+                            requiredFundingAmount: amount,
+                            needsLargeFunding: amount >= 5
+                          }));
+                        }}
+                        min="0"
+                        max="1000"
+                        className="w-24 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
+                      />
+                      <span className="text-sm text-gray-600">억원</span>
+                    </div>
+                    <p className="text-xs text-gray-400 ml-auto">5억 이상 입력 시 대규모 자금 자동 체크</p>
+                  </div>
+                </div>
+                {/* 자금 용도 선택 */}
+                <div className="p-3 rounded-lg border border-gray-200 bg-gray-50">
+                  <div className="flex items-center gap-4">
+                    <label className="text-sm font-medium text-gray-700 whitespace-nowrap">자금 용도</label>
+                    <div className="flex gap-3">
+                      {[
+                        { value: 'working', label: '운전자금', desc: '원자재, 인건비, 마케팅 등' },
+                        { value: 'facility', label: '시설자금', desc: '설비, 공장, 장비 구매' },
+                        { value: 'both', label: '둘 다', desc: '운전 + 시설' },
+                      ].map(option => (
+                        <label key={option.value} className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="fundingPurpose"
+                            value={option.value}
+                            checked={profile.fundingPurpose === option.value}
+                            onChange={e => updateProfile('fundingPurpose', e.target.value as 'working' | 'facility' | 'both')}
+                            className="w-4 h-4 text-cyan-500 focus:ring-cyan-500"
+                          />
+                          <div>
+                            <span className="text-sm font-medium text-gray-700">{option.label}</span>
+                            <p className="text-xs text-gray-400">{option.desc}</p>
+                          </div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* 제약 조건 */}
             <div className="bg-white rounded-xl shadow-sm p-5">
               <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <span className="w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xs">6</span>
+                <span className="w-6 h-6 bg-red-100 text-red-600 rounded-full flex items-center justify-center text-xs">7</span>
                 제약 조건
               </h3>
               <div className="space-y-4">
