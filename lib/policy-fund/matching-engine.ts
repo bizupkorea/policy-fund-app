@@ -507,6 +507,23 @@ export interface ExtendedCompanyProfile extends CompanyPolicyProfile {
   requiredFundingAmount?: number;    // 필요 자금 (억원)
   // 자금 용도
   requestedFundingPurpose?: 'working' | 'facility' | 'both';
+  // 재창업 여부
+  isRestart?: boolean;
+  // 세부 자금 용도 (복수 선택)
+  fundingPurposeDetails?: {
+    facilityInvestment?: boolean;    // 설비 투자
+    facilityInstallation?: boolean;  // 시설 설치
+    rndTechUpgrade?: boolean;        // R&D / 기술 고도화
+    commercialization?: boolean;     // 사업화 투자
+    operatingExpenses?: boolean;     // 단순 운영자금
+    environmentInvestment?: boolean; // 환경 투자 (환경 설비/시설/R&D)
+  };
+  // 정책자금 이용 이력
+  kosmesPreviousCount?: number;  // 중진공 누적 이용 횟수 (졸업제 체크)
+  currentGuaranteeOrg?: 'none' | 'kodit' | 'kibo' | 'both';  // 현재 이용 중인 보증기관
+  existingLoanBalance?: number;  // 기존 정책자금 잔액 (억원)
+  recentYearSubsidyAmount?: number;  // 최근 1년 정책자금 수혜액 (억원)
+  hasPastDefault?: boolean;  // 과거 부실/사고 이력 (보증사고, 대출연체 등)
 }
 
 /**
@@ -1150,6 +1167,8 @@ export function convertToKBProfile(
     isEmergencySituation: false,
     // 업력 예외 조건 전달
     businessAgeExceptions: profile.businessAgeExceptions,
+    // 재창업 여부 전달
+    isRestart: profile.isRestart,
   };
 }
 
@@ -1222,10 +1241,19 @@ export async function matchWithKnowledgeBase(
     eligibilityResults = eligibilityResults.filter(r => r.fundId !== 'kodit-securitization');
   }
 
+  // 미래환경산업육성융자 필터링: 환경 투자 체크 시에만 포함 (positive filter)
+  // 환경 투자 전용 자금이므로 명시적으로 환경 투자를 선택한 경우에만 매칭
+  const envFundIds = ['keiti-env-growth', 'keiti-env-facility'];  // 올바른 ID 사용
+  if (profile.fundingPurposeDetails?.environmentInvestment) {
+    // 환경 투자 체크됨 - 환경 자금 포함 (기존 결과 유지)
+  } else {
+    // 환경 투자 미체크 - 환경 자금 제외
+    eligibilityResults = eligibilityResults.filter(r => !envFundIds.includes(r.fundId));
+  }
+
   // 결과 변환 (자금 규모별 매칭 보너스 적용)
-  const results: DetailedMatchResult[] = eligibilityResults
-    .slice(0, topN)
-    .map(result => {
+  // 중요: 보너스 점수 적용 후 재정렬 필요!
+  const resultsWithBonus: DetailedMatchResult[] = eligibilityResults.map(result => {
       const fund = POLICY_FUND_KNOWLEDGE_BASE.find(f => f.id === result.fundId);
       const detailedResult = convertToDetailedMatchResult(result, fund);
 
@@ -1260,7 +1288,155 @@ export async function matchWithKnowledgeBase(
                              detailedResult.score >= 40 ? 'medium' : 'low';
 
       return detailedResult;
+  });
+
+  // ========== 추가 감점 로직 ==========
+
+  // 1. 중진공 졸업제 체크 (단계별 감점)
+  // - 4회: -30점 (주의)
+  // - 5회 이상: -60점 (사실상 신청 불가)
+  const kosmesPrevCount = profile.kosmesPreviousCount ?? 0;
+  if (kosmesPrevCount >= 4) {
+    resultsWithBonus.forEach(r => {
+      if (r.institutionId === 'kosmes') {
+        if (kosmesPrevCount >= 5) {
+          // 5회 이상: 사실상 불가
+          r.score = Math.max(0, r.score - 60);
+          r.warnings.push('중진공 정책자금 5회 이상 이용 (졸업제 - 신규 지원 불가)');
+        } else {
+          // 4회: 주의
+          r.score = Math.max(0, r.score - 30);
+          r.warnings.push('중진공 정책자금 4회 이용 (졸업제 임박)');
+        }
+        r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
+      }
     });
+  }
+
+  // 2. 보증기관 중복 이용 체크 (신보/기보 중복 시 -20점)
+  if (profile.currentGuaranteeOrg && profile.currentGuaranteeOrg !== 'none') {
+    const usingKodit = profile.currentGuaranteeOrg === 'kodit' || profile.currentGuaranteeOrg === 'both';
+    const usingKibo = profile.currentGuaranteeOrg === 'kibo' || profile.currentGuaranteeOrg === 'both';
+
+    resultsWithBonus.forEach(r => {
+      const isKodit = r.institutionId === 'kodit';
+      const isKibo = r.institutionId === 'kibo';
+
+      // 신보 이용 중인데 기보 자금 신청, 또는 그 반대
+      if ((isKibo && usingKodit) || (isKodit && usingKibo)) {
+        r.score = Math.max(0, r.score - 20);
+        r.warnings.push('타 보증기관 이용 중 (중복 보증 제한)');
+        r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
+      }
+    });
+  }
+
+  // 3. 운전자금 통합 한도 체크 (기존 잔액 기반 단계별 감점)
+  if (profile.existingLoanBalance && profile.existingLoanBalance > 0) {
+    const balance = profile.existingLoanBalance;
+    resultsWithBonus.forEach(r => {
+      if (balance >= 15) {
+        r.score = Math.max(0, r.score - 20);
+        r.warnings.push('기존 정책자금 잔액 과다 (15억+, 한도 초과 우려)');
+      } else if (balance >= 10) {
+        r.score = Math.max(0, r.score - 10);
+        r.warnings.push('기존 정책자금 잔액 10억 이상 (한도 근접)');
+      } else if (balance >= 5) {
+        r.score = Math.max(0, r.score - 5);
+        r.warnings.push('기존 정책자금 잔액 5억 이상 (여유 한도 축소)');
+      }
+      r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
+    });
+  }
+
+  // 4. 최근 1년 수혜액 대비 매출 비율 체크
+  if (profile.recentYearSubsidyAmount && profile.recentYearSubsidyAmount > 0 && profile.annualRevenue && profile.annualRevenue > 0) {
+    const subsidyRatio = profile.recentYearSubsidyAmount / profile.annualRevenue;
+    resultsWithBonus.forEach(r => {
+      if (subsidyRatio > 0.5) {
+        // 매출의 50% 초과 수혜 - 과다 이용
+        r.score = Math.max(0, r.score - 20);
+        r.warnings.push(`최근 1년 수혜액 과다 (매출 대비 ${Math.round(subsidyRatio * 100)}%)`);
+      } else if (subsidyRatio > 0.33) {
+        // 매출의 33% 초과 수혜
+        r.score = Math.max(0, r.score - 10);
+        r.warnings.push(`최근 1년 수혜액 주의 (매출 대비 ${Math.round(subsidyRatio * 100)}%)`);
+      }
+      r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
+    });
+  }
+
+  // 5. 부실/사고 이력 체크 (재창업/재기자금은 오히려 우대)
+  if (profile.hasPastDefault) {
+    resultsWithBonus.forEach(r => {
+      const isRestartFund = r.fundId.includes('restart') || r.fundName.includes('재창업') || r.fundName.includes('재도약') || r.fundName.includes('재기');
+
+      if (isRestartFund) {
+        // 재창업/재기 자금은 부실 이력이 있어야 신청 가능 → 우대
+        r.score = Math.min(100, r.score + 15);
+        r.eligibilityReasons.push('부실/사고 이력 보유 (재도전 자금 적격)');
+      } else {
+        // 일반 자금은 부실 이력 시 감점
+        r.score = Math.max(0, r.score - 40);
+        r.warnings.push('과거 부실/사고 이력 (보증사고, 대출연체 등)');
+      }
+      r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
+    });
+  }
+
+
+  // 6. 용도 불일치 체크 (시설↔운전 불일치 -15점)
+  if (profile.requestedFundingPurpose && profile.requestedFundingPurpose !== 'both') {
+    resultsWithBonus.forEach(r => {
+      const fund = POLICY_FUND_KNOWLEDGE_BASE.find(f => f.id === r.fundId);
+      if (fund) {
+        const requested = profile.requestedFundingPurpose;
+        const supportsWorking = fund.fundingPurpose.working;
+        const supportsFacility = fund.fundingPurpose.facility;
+
+        // 운전자금 요청인데 운전자금 미지원
+        if (requested === 'working' && !supportsWorking && supportsFacility) {
+          r.score = Math.max(0, r.score - 15);
+          r.warnings.push('용도 불일치 (운전자금 필요, 시설자금 전용)');
+          r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
+        }
+        // 시설자금 요청인데 시설자금 미지원
+        if (requested === 'facility' && !supportsFacility && supportsWorking) {
+          r.score = Math.max(0, r.score - 15);
+          r.warnings.push('용도 불일치 (시설자금 필요, 운전자금 전용)');
+          r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
+        }
+      }
+    });
+  }
+
+  // 7. 재창업 기업 처리 (재창업자금 +20점 보너스 / 일반자금 -20점 감점)
+  if (profile.isRestart) {
+    resultsWithBonus.forEach(r => {
+      const isRestartFund = r.fundId.includes('restart') ||
+                           r.fundName.includes('재창업') ||
+                           r.fundName.includes('재도약') ||
+                           r.fundName.includes('재기') ||
+                           r.fundName.includes('재도전');
+
+      if (isRestartFund) {
+        // 재창업 전용 자금: +20점 보너스 (최우선 추천)
+        r.score = Math.min(100, r.score + 20);
+        r.eligibilityReasons.push('재창업 기업 - 재도전 자금 최우선 추천');
+        r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
+      } else {
+        // 일반 자금: -20점 감점 (심사 탈락 위험 반영)
+        r.score = Math.max(0, r.score - 20);
+        r.warnings.push('재창업기업에 일반자금 추천 (심사 탈락 위험)');
+        r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
+      }
+    });
+  }
+
+  // 감점 적용 후 점수 내림차순 재정렬 및 상위 N개 선택
+  const results = resultsWithBonus
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topN);
 
   // AI 분석 (옵션)
   let aiAnalysis: AIAdvisorResult[] | undefined;

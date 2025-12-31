@@ -69,6 +69,9 @@ export interface CompanyProfile {
 
   // 자금 용도 (운전/시설/둘다)
   requestedFundingPurpose?: 'working' | 'facility' | 'both';
+
+  // 재창업 여부
+  isRestart?: boolean;
 }
 
 /** 자격 체크 결과 */
@@ -267,6 +270,39 @@ export function checkFundEligibility(
   // 추가 우대 체크 (벤처/이노비즈, 수출기업, 기술기업)
   const additionalBonuses = checkAdditionalBonuses(profile, fund);
   bonusConditions.push(...additionalBonuses);
+
+  // ========== 4단계: 재창업자금 체크 ==========
+  const isRestartOnlyFund = fund.id === 'kosmes-restart' || fund.name.includes('재창업') || fund.name.includes('재도약');
+
+  if (isRestartOnlyFund) {
+    if (profile.isRestart) {
+      // 재창업기업이면 재창업자금 적격
+      passedConditions.push({
+        condition: '재창업 기업',
+        status: 'pass',
+        description: '재창업 기업 조건 충족 - 재창업자금 최우선 추천',
+        impact: 30,
+      });
+    } else {
+      // 재창업기업이 아니면 재창업자금 부적격
+      failedConditions.push({
+        condition: '재창업 기업',
+        status: 'fail',
+        description: '재창업자금은 재창업 기업만 신청 가능 (과거 폐업 후 재창업 필요)',
+        impact: -50,
+      });
+    }
+  } else {
+    // 일반 자금인데 재창업기업인 경우 보너스
+    if (profile.isRestart) {
+      bonusConditions.push({
+        condition: '재창업 기업',
+        status: 'bonus',
+        description: '재창업 기업 (재도전 지원 우대 가능)',
+        impact: 5,
+      });
+    }
+  }
 
   // ========== 점수 계산 ==========
   const eligibilityScore = calculateScore(
@@ -683,7 +719,7 @@ function checkCertifications(
     condition: '인증 조건',
     status: 'pass',
     description: '필수 인증 보유',
-    impact: 15,
+    impact: 30,
   };
 }
 
@@ -701,7 +737,7 @@ function checkOwnerCharacteristics(
         condition: '청년 대표자',
         status: 'pass',
         description: '청년 대표자 조건 충족 (만 39세 이하)',
-        impact: 15,
+        impact: 30,
       };
     } else {
       return {
@@ -760,7 +796,7 @@ function checkAdditionalBonuses(
       condition: '수출 기업',
       status: 'bonus',
       description: '수출 실적 보유 기업 우대',
-      impact: 15,
+      impact: 30,
     });
   }
 
@@ -770,7 +806,7 @@ function checkAdditionalBonuses(
       condition: '기술력 보유',
       status: 'bonus',
       description: '특허/기술 보유 기업 우대 (기보)',
-      impact: 15,
+      impact: 30,
     });
   }
 

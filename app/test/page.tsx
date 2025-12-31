@@ -50,6 +50,12 @@ interface TestProfile {
   existingLoanBalance: number; // 억원
   isRestart: boolean; // 재창업 여부
 
+  // 정책자금 이용 이력
+  kosmesPreviousCount: number;  // 중진공 누적 이용 횟수 (졸업제 체크)
+  currentGuaranteeOrg: 'none' | 'kodit' | 'kibo' | 'both';  // 현재 이용 중인 보증기관
+  recentYearSubsidyAmount: number;  // 최근 1년 정책자금 수혜액 (억원)
+  hasPastDefault: boolean;  // 과거 부실/사고 이력
+
   // 업력 예외 조건 (청년전용창업자금 업력 7년 확대)
   isYouthStartupAcademyGrad: boolean; // 청년창업사관학교 졸업
   isGlobalStartupAcademyGrad: boolean; // 글로벌창업사관학교 졸업
@@ -101,6 +107,10 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       hasTaxDelinquency: false,
       existingLoanBalance: 0,
       isRestart: false,
+      kosmesPreviousCount: 0,
+      currentGuaranteeOrg: 'none',
+      recentYearSubsidyAmount: 0,
+      hasPastDefault: false,
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
@@ -136,6 +146,10 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       hasTaxDelinquency: false,
       existingLoanBalance: 0,
       isRestart: false,
+      kosmesPreviousCount: 0,
+      currentGuaranteeOrg: 'none',
+      recentYearSubsidyAmount: 0,
+      hasPastDefault: false,
       isYouthStartupAcademyGrad: true,  // 청창사 졸업 예외 적용
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
@@ -171,6 +185,10 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       hasTaxDelinquency: false,
       existingLoanBalance: 0,
       isRestart: false,
+      kosmesPreviousCount: 0,
+      currentGuaranteeOrg: 'none',
+      recentYearSubsidyAmount: 0,
+      hasPastDefault: false,
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
@@ -206,6 +224,10 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       hasTaxDelinquency: false,
       existingLoanBalance: 5,
       isRestart: false,
+      kosmesPreviousCount: 0,
+      currentGuaranteeOrg: 'none',
+      recentYearSubsidyAmount: 0,
+      hasPastDefault: false,
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
@@ -241,6 +263,10 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       hasTaxDelinquency: false,
       existingLoanBalance: 2,
       isRestart: false,
+      kosmesPreviousCount: 0,
+      currentGuaranteeOrg: 'none',
+      recentYearSubsidyAmount: 0,
+      hasPastDefault: false,
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
@@ -276,6 +302,10 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       hasTaxDelinquency: false,
       existingLoanBalance: 10,
       isRestart: false,
+      kosmesPreviousCount: 0,
+      currentGuaranteeOrg: 'none',
+      recentYearSubsidyAmount: 0,
+      hasPastDefault: false,
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
@@ -311,6 +341,10 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       hasTaxDelinquency: false,
       existingLoanBalance: 0,
       isRestart: true,
+      kosmesPreviousCount: 0,
+      currentGuaranteeOrg: 'none',
+      recentYearSubsidyAmount: 0,
+      hasPastDefault: false,
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
@@ -346,6 +380,10 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       hasTaxDelinquency: true,
       existingLoanBalance: 15,
       isRestart: false,
+      kosmesPreviousCount: 0,
+      currentGuaranteeOrg: 'none',
+      recentYearSubsidyAmount: 0,
+      hasPastDefault: false,
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
@@ -479,6 +517,12 @@ export default function TestPage() {
         requiredFundingAmount: profile.requiredFundingAmount,
         // 자금 용도
         requestedFundingPurpose: profile.fundingPurpose,
+        // 정책자금 이용 이력
+        kosmesPreviousCount: profile.kosmesPreviousCount,
+        currentGuaranteeOrg: profile.currentGuaranteeOrg,
+        existingLoanBalance: profile.existingLoanBalance,
+        recentYearSubsidyAmount: profile.recentYearSubsidyAmount,
+        hasPastDefault: profile.hasPastDefault,
       };
 
       const result = await matchWithKnowledgeBase(extendedProfile, {
@@ -918,6 +962,8 @@ export default function TestPage() {
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">
                     기존 대출 잔액 <span className="text-orange-500 font-bold">{profile.existingLoanBalance}억원</span>
+                    {profile.existingLoanBalance >= 15 && <span className="text-red-500 ml-2">⚠️ 한도 초과 우려</span>}
+                    {profile.existingLoanBalance >= 10 && profile.existingLoanBalance < 15 && <span className="text-orange-500 ml-2">⚠️ 한도 근접</span>}
                   </label>
                   <input
                     type="range"
@@ -928,6 +974,87 @@ export default function TestPage() {
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
                   />
                 </div>
+                {/* 중진공 이용 횟수 */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    중진공 정책자금 이용 횟수 <span className="text-orange-500 font-bold">{profile.kosmesPreviousCount}회</span>
+                    {profile.kosmesPreviousCount >= 4 && <span className="text-red-500 ml-2">⚠️ 졸업제 해당</span>}
+                  </label>
+                  <input
+                    type="range"
+                    value={profile.kosmesPreviousCount}
+                    onChange={e => updateProfile('kosmesPreviousCount', parseInt(e.target.value))}
+                    min={0}
+                    max={10}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                  />
+                </div>
+                {/* 보증기관 이용 현황 */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-2">
+                    현재 이용 중인 보증기관
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { value: 'none', label: '없음' },
+                      { value: 'kodit', label: '신용보증기금' },
+                      { value: 'kibo', label: '기술보증기금' },
+                      { value: 'both', label: '둘 다' },
+                    ].map(opt => (
+                      <label key={opt.value} className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="guaranteeOrg"
+                          value={opt.value}
+                          checked={profile.currentGuaranteeOrg === opt.value}
+                          onChange={e => updateProfile('currentGuaranteeOrg', e.target.value as typeof profile.currentGuaranteeOrg)}
+                          className="w-4 h-4 text-orange-500 focus:ring-orange-500"
+                        />
+                        <span className="text-sm text-gray-700">{opt.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {profile.currentGuaranteeOrg !== 'none' && (
+                    <p className="text-xs text-orange-500 mt-1">⚠️ 타 보증기관 자금 신청 시 중복 보증 제한</p>
+                  )}
+                </div>
+                {/* 최근 1년 수혜액 */}
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    최근 1년 수혜액 <span className="text-orange-500 font-bold">{profile.recentYearSubsidyAmount}억원</span>
+                    {profile.annualRevenue > 0 && profile.recentYearSubsidyAmount > 0 && (
+                      <span className={`ml-2 ${(profile.recentYearSubsidyAmount / profile.annualRevenue) > 0.5 ? 'text-red-500' : (profile.recentYearSubsidyAmount / profile.annualRevenue) > 0.33 ? 'text-orange-500' : 'text-green-500'}`}>
+                        (매출대비 {Math.round((profile.recentYearSubsidyAmount / profile.annualRevenue) * 100)}%)
+                      </span>
+                    )}
+                  </label>
+                  <input
+                    type="range"
+                    min={0}
+                    max={20}
+                    step={0.5}
+                    value={profile.recentYearSubsidyAmount}
+                    onChange={e => updateProfile('recentYearSubsidyAmount', parseFloat(e.target.value))}
+                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                  />
+                  {profile.annualRevenue > 0 && profile.recentYearSubsidyAmount / profile.annualRevenue > 0.33 && (
+                    <p className="text-xs text-orange-500 mt-1">⚠️ 매출 대비 수혜액 비율 주의 (33% 초과 시 감점)</p>
+                  )}
+                </div>
+                {/* 부실/사고 이력 */}
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={profile.hasPastDefault}
+                    onChange={e => updateProfile('hasPastDefault', e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
+                  />
+                  <span className="text-sm text-gray-700">과거 부실/사고 이력</span>
+                  <span className="text-xs text-gray-500">(보증사고, 대출연체 등)</span>
+                </label>
+                {profile.hasPastDefault && (
+                  <p className="text-xs text-orange-500 ml-6">⚠️ 일반자금 감점, 재창업/재기자금은 우대</p>
+                )}
               </div>
             </div>
 
@@ -1097,6 +1224,20 @@ function ResultCard({ result, rank }: { result: DetailedMatchResult; rank: numbe
                 {result.eligibilityReasons.map((reason, idx) => (
                   <li key={idx} className="text-xs text-gray-600 pl-3 relative before:absolute before:left-0 before:content-['•'] before:text-green-500">
                     {reason}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* 감점 요소 (warnings) */}
+          {result.warnings && result.warnings.length > 0 && (
+            <div className="mt-3">
+              <div className="text-xs font-medium text-orange-700 mb-1">⚠️ 감점 요소</div>
+              <ul className="space-y-1">
+                {result.warnings.map((warning, idx) => (
+                  <li key={idx} className="text-xs text-gray-600 pl-3 relative before:absolute before:left-0 before:content-['•'] before:text-orange-500">
+                    {warning}
                   </li>
                 ))}
               </ul>
