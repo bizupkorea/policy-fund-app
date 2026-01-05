@@ -251,6 +251,27 @@ export function checkFundEligibility(
   // 청년 전용 자금인지 확인 (자금명에 '청년' 포함)
   const isYouthOnlyFund = fund.name.includes('청년') || fund.id.includes('youth');
 
+  // ★★★ requiredConditions 체크 (v3) ★★★
+  if (criteria.requiredConditions) {
+    const reqCond = criteria.requiredConditions;
+    if (reqCond.isYouthCompany === true && !profile.ownerCharacteristics?.includes('youth')) {
+      failedConditions.push({ condition: '청년 대표자 필수', status: 'fail', description: '청년 전용 자금: 만 39세 이하만', impact: -50 });
+    }
+    if (reqCond.isFemale === true && !profile.ownerCharacteristics?.includes('female')) {
+      failedConditions.push({ condition: '여성 대표자 필수', status: 'fail', description: '여성 전용 자금: 여성 대표자만', impact: -50 });
+    }
+    if (reqCond.isDisabled === true && !profile.ownerCharacteristics?.includes('disabled')) {
+      failedConditions.push({ condition: '장애인 대표자 필수', status: 'fail', description: '장애인 전용 자금: 장애인만', impact: -50 });
+    }
+    if (reqCond.hasRndActivity === true && !profile.hasTechAssets) {
+      failedConditions.push({ condition: 'R&D 필수', status: 'fail', description: '기술/R&D 자금: 기술 근거 필요', impact: -50 });
+    }
+    if (reqCond.hasExportRevenue === true && !profile.hasExportExperience) {
+      failedConditions.push({ condition: '수출 실적 필수', status: 'fail', description: '수출 자금: 수출 실적 필요', impact: -50 });
+    }
+  }
+
+
   if (criteria.preferredOwnerTypes) {
     const ownerCheck = checkOwnerCharacteristics(
       profile.ownerCharacteristics || [],

@@ -60,6 +60,40 @@ export interface ParsedPolicyConditions {
 }
 
 /**
+ * ★ v4+: 트랙 타입 정의
+ * - exclusive: 전용자금 (장애인/사회적기업/여성/재창업 등)
+ * - policy_linked: 정책연계 (R&D/수출/일자리 등)
+ * - general: 일반자금 (운전/시설)
+ * - guarantee: 보증상품 (신보/기보)
+ */
+export type MatchResultTrack = 'exclusive' | 'policy_linked' | 'general' | 'guarantee';
+
+/**
+ * ★ v6: 확신도 라벨 (점수 대신 UI에 표시)
+ */
+export type ConfidenceLabel = '전용·우선' | '유력' | '대안' | '플랜B';
+
+/**
+ * 트랙 한글 라벨
+ */
+export const TRACK_LABELS: Record<MatchResultTrack, string> = {
+  exclusive: '전용자금',
+  policy_linked: '정책연계',
+  general: '일반',
+  guarantee: '보증',
+};
+
+/**
+ * 트랙 우선순위 (낮을수록 우선)
+ */
+export const TRACK_PRIORITY: Record<MatchResultTrack, number> = {
+  exclusive: 1,
+  policy_linked: 2,
+  general: 3,
+  guarantee: 4,
+};
+
+/**
  * 상세 매칭 결과 (불가 사유 포함)
  */
 export interface DetailedMatchResult extends MatchResult {
@@ -69,6 +103,18 @@ export interface DetailedMatchResult extends MatchResult {
   institutionId: string;
   institutionName?: string;
   officialUrl?: string;  // 공고 원문 URL
+
+  // ★ v4+: 트랙 정보
+  track: MatchResultTrack;
+  trackLabel: string;
+  scoreExplanation: string;
+
+  // ★ v4+: 순위 정보 (정렬 후 할당)
+  rank?: number;
+  rankReason?: string;
+
+  // ★ v6: 확신도 라벨 (점수 대신 UI 표시용)
+  confidenceLabel?: ConfidenceLabel;
 
   isEligible: boolean;
   eligibilityReasons: string[];    // 적합 사유
@@ -1147,6 +1193,12 @@ export function convertToKBProfile(
     certifications.push('small');
   }
 
+  // ★★★ v3: 대표자 특성 매핑 (청년/여성/장애인 등) ★★★
+  const ownerCharacteristics = [];
+  if (profile.isYouthCompany) ownerCharacteristics.push('youth');
+  if (profile.isFemale) ownerCharacteristics.push('female');
+  if (profile.isDisabled || profile.isDisabledStandard) ownerCharacteristics.push('disabled');
+
   return {
     companyName: profile.companyName,
     businessNumber: profile.businessNumber,
@@ -1157,7 +1209,7 @@ export function convertToKBProfile(
     industryDetail: profile.industryName || profile.industry,
     region: profile.region || profile.location,
     certifications,
-    ownerCharacteristics: profile.isYouthCompany ? ['youth'] : undefined,
+    ownerCharacteristics: ownerCharacteristics.length > 0 ? ownerCharacteristics : undefined,
     hasTaxDelinquency: profile.hasTaxDelinquency,
     hasBankDelinquency: false, // 기존 프로필에 없는 필드
     isInactive: false,
@@ -1172,6 +1224,69 @@ export function convertToKBProfile(
   };
 }
 
+
+/**
+ * ★ v4: 순위 역할 태그 생성
+ */
+function getRankRole(rank, track) {
+  if (!rank) return '';
+  if (rank <= 2 && track === 'exclusive') return '[최우선] ';
+  if (rank === 3) return '[대안] ';
+  if (rank === 4) return '[차선] ';
+  if (rank >= 5) return '[참고] ';
+  return '';
+}
+
+/**
+ * ★ v4: "왜 이 순위인지" 한 문장 설명 생성
+ */
+function generateRankReason(rank, track, fundName) {
+  if (rank === 1) return `${fundName}은(는) 귀사의 정책 자격과 목적이 가장 정확히 일치하는 자금입니다.`;
+  if (rank === 2 && track === 'exclusive') return `${fundName}은(는) 1순위와 함께 검토할 수 있는 전용 자금입니다.`;
+  if (rank === 2) return `${fundName}은(는) 1순위 다음으로 정합성이 높은 자금입니다.`;
+  if (rank === 3) return `${fundName}은(는) 전용 자금 집행이 어려울 경우의 정책 목적 유사 대안입니다.`;
+  if (rank === 4) return `${fundName}은(는) 직접대출 외 보증·간접자금으로 활용 가능합니다.`;
+  if (rank >= 5) return `${fundName}은(는) 참고용으로만 제시되는 자금입니다.`;
+  return '';
+}
+
+/**
+ * ★ v6: 확신도 라벨 생성 (점수 대신 UI에 표시)
+ */
+function generateConfidenceLabel(rank, track, score) {
+  if (rank <= 2 && track === 'exclusive') return '전용·우선';
+  if (rank <= 2 && track === 'policy_linked') return '유력';
+  if (rank === 3 || (track === 'general' && score >= 60) || (track === 'policy_linked' && score >= 50)) return '대안';
+  return '플랜B';
+}
+
+/**
+ * ★ v4: 점수 설명 문구 생성
+ */
+function generateScoreExplanation(score, track, fundName, rank) {
+  const trackKor = TRACK_LABELS[track];
+  const rankRole = getRankRole(rank, track);
+
+  if (track === 'exclusive') {
+    if (score >= 90) return `${rankRole}본 자금은 귀사의 인증/자격 조건과 정책 목적이 완벽히 일치하는 ${trackKor} 자금입니다.`;
+    if (score >= 80) return `${rankRole}본 자금은 귀사에 적합한 ${trackKor} 자금으로, 우선 검토 대상입니다.`;
+    return `${rankRole}본 자금은 ${trackKor} 자금이나, 일부 조건 확인이 필요합니다.`;
+  }
+  if (track === 'policy_linked') {
+    if (score >= 80) return `${rankRole}본 자금은 귀사의 사업 방향과 정책 목적이 잘 부합하는 ${trackKor} 자금입니다.`;
+    if (score >= 70) return `${rankRole}본 자금은 ${trackKor} 자금으로, 현실적 대안이 될 수 있습니다.`;
+    return `${rankRole}본 자금은 ${trackKor} 자금이나, 적합도 확인이 필요합니다.`;
+  }
+  if (track === 'general') {
+    if (score >= 70) return `${rankRole}본 자금은 일반적인 지원 조건을 충족하는 ${trackKor} 자금입니다.`;
+    if (score >= 60) return `${rankRole}본 자금은 기본 조건은 충족하나, 정책 정합성은 보통 수준입니다.`;
+    return `${rankRole}본 자금은 조건은 충족하나, 우선순위가 낮은 ${trackKor} 자금입니다.`;
+  }
+  // guarantee
+  if (score >= 70) return `${rankRole}본 자금은 담보력 보완에 유용한 ${trackKor} 상품입니다.`;
+  return `${rankRole}본 자금은 플랜B로 고려할 수 있는 ${trackKor} 상품입니다.`;
+}
+
 /**
  * EligibilityResult를 DetailedMatchResult로 변환
  */
@@ -1181,6 +1296,14 @@ export function convertToDetailedMatchResult(
 ): DetailedMatchResult {
   const institution = fund ? INSTITUTIONS[fund.institutionId] : undefined;
 
+  // ★ v4: 트랙 결정
+  const track = (fund?.track || (
+    eligibilityResult.institutionId === 'kodit' || eligibilityResult.institutionId === 'kibo'
+      ? 'guarantee'
+      : 'general'
+  ));
+  const score = eligibilityResult.eligibilityScore;
+
   return {
     // 자금 정보
     fundId: eligibilityResult.fundId,
@@ -1189,9 +1312,13 @@ export function convertToDetailedMatchResult(
     institutionName: institution?.name,
     officialUrl: fund?.officialUrl,
 
-    score: eligibilityResult.eligibilityScore,
-    level: eligibilityResult.eligibilityScore >= 70 ? 'high' :
-           eligibilityResult.eligibilityScore >= 40 ? 'medium' : 'low',
+    // ★ v4+: 트랙 정보
+    track,
+    trackLabel: TRACK_LABELS[track],
+    scoreExplanation: generateScoreExplanation(score, track, eligibilityResult.fundName),
+
+    score,
+    level: score >= 70 ? 'high' : score >= 40 ? 'medium' : 'low',
     reasons: eligibilityResult.passedConditions.map(c => c.description),
     warnings: eligibilityResult.warningConditions.map(c => c.description),
     isEligible: eligibilityResult.isEligible,
@@ -1250,6 +1377,38 @@ export async function matchWithKnowledgeBase(
     // 환경 투자 미체크 - 환경 자금 제외
     eligibilityResults = eligibilityResults.filter(r => !envFundIds.includes(r.fundId));
   }
+
+  // ★★★ v5: 트랙 강제 분기 (핵심) ★★★
+  // 전용자격 보유자 → general 제외, 비보유자 → exclusive 제외
+  let allowedTracks;
+  let blockedTracks;
+
+  const hasExclusiveQualification =
+    profile.isDisabledStandard ||
+    profile.isDisabled ||
+    profile.isSocialEnterprise ||
+    profile.isRestart ||
+    profile.isFemale;
+
+  if (hasExclusiveQualification) {
+    allowedTracks = ['exclusive', 'policy_linked', 'guarantee'];
+    blockedTracks = ['general'];
+  } else {
+    allowedTracks = ['policy_linked', 'general', 'guarantee'];
+    blockedTracks = ['exclusive'];
+  }
+
+  // blocked_tracks에 해당하는 자금 필터링
+  eligibilityResults = eligibilityResults.filter(r => {
+    const fund = POLICY_FUND_KNOWLEDGE_BASE.find(f => f.id === r.fundId);
+    if (!fund) return true;
+    const fundTrack = fund.track;
+    return !blockedTracks.includes(fundTrack);
+  });
+
+  // ★★★ v3: isEligible 필터링 (핵심) ★★★
+  // eligibility-checker가 fail 판정한 자금은 결과에서 제외
+  eligibilityResults = eligibilityResults.filter(r => r.isEligible);
 
   // 결과 변환 (자금 규모별 매칭 보너스 적용)
   // 중요: 보너스 점수 적용 후 재정렬 필요!
@@ -1433,10 +1592,33 @@ export async function matchWithKnowledgeBase(
     });
   }
 
-  // 감점 적용 후 점수 내림차순 재정렬 및 상위 N개 선택
-  const results = resultsWithBonus
-    .sort((a, b) => b.score - a.score)
-    .slice(0, topN);
+  // ★ v4: 트랙 우선순위 정렬 (exclusive > policy_linked > general > guarantee)
+  // ★ v6: 상한 5개 제한
+  const MAX_RESULTS = 5;
+  const sortedResults = resultsWithBonus
+    .sort((a, b) => {
+      // 1단계: 트랙 우선순위 비교
+      const aTrackPriority = TRACK_PRIORITY[a.track] ?? 99;
+      const bTrackPriority = TRACK_PRIORITY[b.track] ?? 99;
+      if (aTrackPriority !== bTrackPriority) {
+        return aTrackPriority - bTrackPriority;
+      }
+      // 2단계: 같은 트랙 내에서 점수 비교
+      return b.score - a.score;
+    })
+    .slice(0, Math.min(topN, MAX_RESULTS));
+
+  // ★ v4+v6: 순위/확신도 라벨 할당
+  const results = sortedResults.map((result, index) => {
+    const rank = index + 1;
+    return {
+      ...result,
+      rank,
+      rankReason: generateRankReason(rank, result.track, result.fundName),
+      scoreExplanation: generateScoreExplanation(result.score, result.track, result.fundName, rank),
+      confidenceLabel: generateConfidenceLabel(rank, result.track, result.score),
+    };
+  });
 
   // AI 분석 (옵션)
   let aiAnalysis: AIAdvisorResult[] | undefined;

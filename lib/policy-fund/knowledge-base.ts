@@ -19,6 +19,13 @@ export type InstitutionId = 'kosmes' | 'kodit' | 'kibo' | 'semas' | 'seoul_credi
 /** 자금 유형 */
 export type FundType = 'loan' | 'guarantee' | 'grant';
 
+/** 트랙 유형 (점수 비교 그룹) */
+export type FundTrack =
+  | 'exclusive'      // 전용자격 (인증/법적 지위 기반) - 최우선
+  | 'policy_linked'  // 정책연계 (고용·정책 목적) - 우선
+  | 'general'        // 일반 정책자금 - 기본
+  | 'guarantee';     // 보증/플랜B - 보완
+
 /** 업종 카테고리 */
 export type IndustryCategory =
   | 'manufacturing'      // 제조업
@@ -30,14 +37,16 @@ export type IndustryCategory =
   | 'other_service'      // 기타 서비스업
   | 'all';               // 전 업종
 
-/** 기업 규모 */
+/** 기업 규모 및 기술력 인증 */
 export type CompanyScale =
-  | 'micro'      // 소공인 (10인 미만 제조업)
-  | 'small'      // 소기업 (50인 미만)
-  | 'medium'     // 중소기업 (300인 미만)
-  | 'venture'    // 벤처기업
-  | 'innobiz'    // 이노비즈
-  | 'mainbiz';   // 메인비즈
+  | 'micro'              // 소공인 (10인 미만 제조업)
+  | 'small'              // 소기업 (50인 미만)
+  | 'medium'             // 중소기업 (300인 미만)
+  | 'venture'            // 벤처기업
+  | 'innobiz'            // 이노비즈
+  | 'mainbiz'            // 메인비즈
+  | 'patent'             // 특허 보유
+  | 'research_institute'; // 기업부설연구소
 
 /** 대표자 특성 */
 export type OwnerCharacteristic =
@@ -110,6 +119,50 @@ export interface EligibilityCriteria {
 
   // 수출실적 요구 여부
   requiresExport?: boolean;
+
+  // ========================================
+  // 필수 조건 (조건 불충족 시 자동 제외)
+  // ========================================
+  // 프로필의 boolean 필드와 매핑됨
+  // 예: { hasExportRevenue: true } → 수출실적 없으면 제외
+  requiredConditions?: {
+    // 인증/자격 관련
+    isVentureCompany?: boolean;      // 벤처기업 인증 필수
+    isInnobiz?: boolean;             // 이노비즈 인증 필수
+    hasPatent?: boolean;             // 특허 보유 필수
+    hasResearchInstitute?: boolean;  // 기업부설연구소 필수
+    hasRndActivity?: boolean;        // R&D 활동 필수
+
+    // 수출 관련
+    hasExportRevenue?: boolean;      // 수출실적 필수
+
+    // 대표자 특성
+    isYouthCompany?: boolean;        // 청년기업 (만 39세 이하)
+    isFemale?: boolean;              // 여성기업
+    isDisabled?: boolean;            // 장애인 대표자
+    isDisabledStandard?: boolean;    // 장애인표준사업장
+    isSocialEnterprise?: boolean;    // 사회적기업
+
+    // 특수 계획
+    hasSmartFactoryPlan?: boolean;   // 스마트공장 계획
+    hasEsgInvestmentPlan?: boolean;  // ESG 투자 계획
+    isRestart?: boolean;             // 재창업기업
+
+    // 기타
+    isEmergencySituation?: boolean;  // 긴급경영 상황
+
+    // ========================================
+    // 복합 조건 (매칭엔진에서 OR 로직 처리)
+    // ========================================
+    // 기술력: 벤처/이노비즈/특허/연구소 중 1개 이상
+    hasTechnologyCertification?: boolean;
+    // 장애인기업: isDisabled || isDisabledStandard
+    isDisabledCompany?: boolean;
+    // 사회적경제기업: 사회적기업/예비/사회적협동조합/자활기업/마을기업/장애인표준사업장
+    isSocialEconomyEnterprise?: boolean;
+    // 청년고용계획: 청년 채용 예정
+    hasYouthEmploymentPlan?: boolean;
+  };
 }
 
 /** 지원 조건 */
@@ -159,6 +212,13 @@ export interface PolicyFundKnowledge {
   // 식별자
   id: string;
   institutionId: InstitutionId;
+
+  // 트랙 (점수 비교 그룹)
+  // exclusive: 전용자격 자금 (장애인/여성/재창업 등 인증 기반)
+  // policy_linked: 정책연계 자금 (고용/수출/스마트공장 등 정책 목적)
+  // general: 일반 정책자금 (창업/경영안정 등)
+  // guarantee: 보증 자금 (플랜B)
+  track: FundTrack;
 
   // 기본 정보
   name: string;
@@ -297,15 +357,16 @@ export const INSTITUTIONS: Record<InstitutionId, InstitutionInfo> = {
 
 export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   // ========== 중진공 (3개) ==========
+  // ========== 혁신창업사업화자금 - 일반창업기반 ==========
   {
-    id: 'kosmes-innovation-startup',
+    id: 'kosmes-startup-general',
     institutionId: 'kosmes',
-    name: '혁신창업사업화자금',
-    shortName: '혁신창업',
+    track: 'general',
+    name: '혁신창업사업화자금 (일반창업)',
+    shortName: '일반창업',
     type: 'loan',
-    description: '창업 초기 기업의 사업화를 위한 시설·운전자금 지원',
+    description: '창업 초기 기업의 사업화를 위한 자금 - 기술력 없이도 신청 가능',
 
-    // 자금 용도
     fundingPurpose: { working: true, facility: true },
 
     eligibility: {
@@ -314,13 +375,14 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
         description: '창업 7년 이내 중소기업',
       },
       revenue: {
+        min: 50000000,  // 최소 5천만원 (사업 안정성)
         max: 12000000000,  // 120억
-        description: '연매출 120억원 이하',
+        description: '연매출 5천만원 이상 120억원 이하',
       },
       allowedIndustries: ['manufacturing', 'it_service', 'other_service'],
       excludedIndustries: ['부동산업', '유흥업', '금융업'],
       additionalRequirements: [
-        '사업성 및 기술성 보유',
+        '사업 안정성 입증 (매출 실적)',
         '신용관리정보 미등록',
       ],
       exclusionConditions: [
@@ -332,7 +394,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
 
     terms: {
       amount: {
-        max: 6000000000,  // 60억
+        max: 6000000000,
         unit: '억원',
         description: '기업당 연간 60억원 이내',
       },
@@ -371,6 +433,102 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     preferentialConditions: [
       '청년창업기업 금리 0.3%p 우대',
       '여성기업 금리 우대',
+    ],
+
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
+
+    meta: {
+      lastUpdated: '2025-01',
+      validFrom: '2025-01-01',
+      confidence: 0.9,
+      notes: '기술력 없이도 신청 가능한 일반창업 트랙',
+    },
+  },
+
+  // ========== 혁신창업사업화자금 - 기술기반 ==========
+  {
+    id: 'kosmes-startup-tech',
+    institutionId: 'kosmes',
+    track: 'general',
+    name: '혁신창업사업화자금 (기술기반)',
+    shortName: '기술창업',
+    type: 'loan',
+    description: '기술력 보유 창업기업 전용 - 벤처/이노비즈/특허 필수',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      businessAge: {
+        max: 7,
+        description: '창업 7년 이내 중소기업',
+      },
+      
+      // 필수 조건: 기술력 (벤처/이노비즈/특허/연구소 중 1개) 필수
+      requiredConditions: {
+        hasTechnologyCertification: true,  // 특수 플래그: isVentureCompany || isInnobiz || hasPatent || hasResearchInstitute
+      },
+      revenue: {
+        max: 12000000000,
+        description: '연매출 120억원 이하',
+      },
+      allowedIndustries: ['manufacturing', 'it_service', 'other_service'],
+      excludedIndustries: ['부동산업', '유흥업', '금융업'],
+      // 기술력 필수 조건
+      requiredCertifications: ['venture', 'innobiz', 'patent', 'research_institute'],
+      additionalRequirements: [
+        '기술성 평가 통과 필수',
+        '벤처/이노비즈/특허/연구소 중 1개 이상 보유',
+        '신용관리정보 미등록',
+      ],
+      exclusionConditions: [
+        '휴·폐업 중인 기업',
+        '세금 체납 중인 기업',
+        '금융기관 연체 중인 기업',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 6000000000,
+        unit: '억원',
+        description: '기업당 연간 60억원 이내',
+      },
+      interestRate: {
+        min: 2.0,
+        max: 3.5,
+        type: 'variable',
+        description: '정책자금 기준금리 + 가산금리 (연 2.0~3.5%)',
+      },
+      loanPeriod: {
+        years: 5,
+        gracePeriod: 2,
+        description: '5년 이내 (거치 2년 포함)',
+      },
+      repaymentMethod: '거치 후 원금균등분할상환',
+    },
+
+    practicalInfo: {
+      processingTime: '접수 후 약 2~4주',
+      requiredDocuments: [
+        '사업계획서',
+        '재무제표 (최근 3개년)',
+        '사업자등록증',
+        '법인등기부등본',
+        '기술력 증빙 (벤처확인서, 특허증 등)',
+      ],
+      applicationMethod: '중진공 온라인 신청 (www.kosmes.or.kr)',
+      contactInfo: '중진공 콜센터 1357',
+    },
+
+    riskFactors: [
+      '기술성 평가 탈락 시 지원 불가',
+      '최근 매출 감소 시 심사 불리',
+      '재무제표 정리 필수',
+    ],
+
+    preferentialConditions: [
+      '청년창업기업 금리 0.3%p 우대',
+      '여성기업 금리 우대',
       '벤처·이노비즈 인증기업 우대',
     ],
 
@@ -380,13 +538,14 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       lastUpdated: '2025-01',
       validFrom: '2025-01-01',
       confidence: 0.9,
-      notes: '2025년도 정책자금 기준',
+      notes: '기술력 보유 필수 - 벤처/이노비즈/특허/연구소',
     },
   },
 
   {
     id: 'kosmes-new-market',
     institutionId: 'kosmes',
+    track: 'general',
     name: '신시장진출지원자금',
     shortName: '신시장진출',
     type: 'loan',
@@ -396,6 +555,10 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     fundingPurpose: { working: true, facility: true },
 
     eligibility: {
+      employeeCount: {
+        min: 5,
+        description: '상시근로자 5인 이상 중소기업',
+      },
       businessAge: {
         min: 1,
         description: '업력 1년 이상',
@@ -406,6 +569,10 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       },
       allowedIndustries: ['all'],
       requiresExport: true,
+      // 필수 조건: 수출실적 필수
+      requiredConditions: {
+        hasExportRevenue: true,
+      },
       additionalRequirements: [
         '수출실적 보유 또는 수출계획 수립 기업',
         '신규 사업 진출 계획 보유',
@@ -457,6 +624,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kosmes-emergency',
     institutionId: 'kosmes',
+    track: 'general',
     name: '긴급경영안정자금',
     shortName: '긴급경영',
     type: 'loan',
@@ -466,6 +634,10 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     fundingPurpose: { working: true, facility: false },
 
     eligibility: {
+      employeeCount: {
+        min: 5,
+        description: '상시근로자 5인 이상 중소기업',
+      },
       additionalRequirements: [
         '재해·재난 피해 기업',
         '매출 급감 기업 (전년 대비 20% 이상)',
@@ -519,6 +691,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kodit-general',
     institutionId: 'kodit',
+    track: 'guarantee',
     name: '일반보증',
     shortName: '신보 일반',
     type: 'guarantee',
@@ -582,6 +755,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kodit-startup',
     institutionId: 'kodit',
+    track: 'guarantee',
     name: '창업기업보증',
     shortName: '신보 창업',
     type: 'guarantee',
@@ -642,6 +816,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kibo-startup',
     institutionId: 'kibo',
+    track: 'guarantee',
     name: '창업기업보증',
     shortName: '기보 창업',
     type: 'guarantee',
@@ -707,6 +882,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kibo-tech-evaluation',
     institutionId: 'kibo',
+    track: 'guarantee',
     name: '기술평가보증',
     shortName: '기보 기술평가',
     type: 'guarantee',
@@ -721,6 +897,11 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
         '기술사업성 평가 통과',
       ],
       excludedIndustries: ['부동산업', '금융업'],
+    
+      // 필수 조건: 기술력 필수
+      requiredConditions: {
+        hasTechnologyCertification: true,
+      },
     },
 
     terms: {
@@ -766,6 +947,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kibo-venture-startup',
     institutionId: 'kibo',
+    track: 'guarantee',
     name: '혁신스타트업보증',
     shortName: '기보 스타트업',
     type: 'guarantee',
@@ -826,6 +1008,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'semas-micro-enterprise',
     institutionId: 'semas',
+    track: 'general',
     name: '소공인특화자금',
     shortName: '소공인',
     type: 'loan',
@@ -885,6 +1068,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'semas-growth',
     institutionId: 'semas',
+    track: 'general',
     name: '성장촉진자금',
     shortName: '성장촉진',
     type: 'loan',
@@ -948,6 +1132,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'semas-emergency',
     institutionId: 'semas',
+    track: 'general',
     name: '긴급자금',
     shortName: '소진공 긴급',
     type: 'loan',
@@ -1004,6 +1189,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kosmes-investment-loan',
     institutionId: 'kosmes',
+    track: 'policy_linked',
     name: '투융자복합금융',
     shortName: '투융자복합',
     type: 'loan',
@@ -1013,16 +1199,19 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     fundingPurpose: { working: true, facility: true },
 
     eligibility: {
+      employeeCount: {
+        min: 5,
+        description: '상시근로자 5인 이상 중소기업',
+      },
       businessAge: {
-        min: 3,
-        description: '업력 3년 이상',
+        min: 2,
+        description: '업력 2년 이상',
       },
       revenue: {
         min: 500000000,  // 5억
         description: '연매출 5억원 이상',
       },
       additionalRequirements: [
-        '최근 2년 내 벤처투자 유치 기업',
         '투자금액 대비 일정 비율 융자',
       ],
       exclusionConditions: [
@@ -1084,6 +1273,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kosmes-restart',
     institutionId: 'kosmes',
+    track: 'exclusive',
     name: '재창업자금',
     shortName: '재창업',
     type: 'loan',
@@ -1093,9 +1283,17 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     fundingPurpose: { working: true, facility: true },
 
     eligibility: {
+      employeeCount: {
+        min: 5,
+        description: '상시근로자 5인 이상 중소기업',
+      },
       businessAge: {
         max: 7,
         description: '재창업 7년 이내',
+      },
+      // 필수 조건: 재창업기업만 가능
+      requiredConditions: {
+        isRestart: true,
       },
       additionalRequirements: [
         '과거 폐업 경험 보유',
@@ -1154,10 +1352,91 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       notes: '재기 지원 정책',
     },
   },
+  // ========== 사회적기업전용자금 ==========
+  {
+    id: 'kosmes-social-enterprise',
+    institutionId: 'kosmes',
+    track: 'exclusive',
+    name: '사회적기업전용자금',
+    shortName: '사회적기업',
+    type: 'loan',
+    description: '사회적 가치 실현 기업 전용 - 고용 취약계층 고용·유지 지원',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      // 필수 조건: 사회적경제기업만 가능
+      requiredConditions: {
+        isSocialEconomyEnterprise: true,
+      },
+      additionalRequirements: [
+        '사회적기업(인증/예비) 또는 사회적협동조합',
+        '또는 자활기업, 마을기업, 장애인표준사업장',
+        '정상 영업 중, 세금 체납 없음',
+        '고용 취약계층 고용·유지 실적',
+      ],
+      exclusionConditions: [
+        '휴·폐업 중인 기업',
+        '세금 체납 중인 기업',
+        '금융기관 연체 중인 기업',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 5000000000,
+        unit: '억원',
+        description: '기업별 수억 원 이내',
+      },
+      interestRate: {
+        min: 1.5,
+        max: 2.5,
+        type: 'variable',
+        description: '정책금리 우대 (연 1.5~2.5%)',
+      },
+      loanPeriod: {
+        years: 8,
+        gracePeriod: 3,
+        description: '8년 (거치 3년)',
+      },
+      repaymentMethod: '거치 후 원금균등분할상환',
+    },
+
+    practicalInfo: {
+      processingTime: '약 2~3주',
+      requiredDocuments: [
+        '사회적기업 인증서 또는 관련 지정서',
+        '사업자등록증',
+        '재무제표',
+        '고용 현황 자료',
+      ],
+      applicationMethod: '중진공 지역본부 접수',
+      contactInfo: '중진공 콜센터 1357',
+    },
+
+    riskFactors: [
+      '사회적 목적 지속 가능성 평가',
+      '고용 유지 실적 확인',
+    ],
+
+    preferentialConditions: [
+      '취약계층 고용 비율 높은 기업 우대',
+      '사회적 가치 성과 우수기업 우대',
+    ],
+
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
+
+    meta: {
+      lastUpdated: '2025-01',
+      confidence: 0.85,
+      notes: '사회적경제기업 전용 트랙',
+    },
+  },
 
   {
     id: 'kosmes-smart-factory',
     institutionId: 'kosmes',
+    track: 'policy_linked',
     name: '스마트공장지원자금',
     shortName: '스마트공장',
     type: 'loan',
@@ -1167,6 +1446,14 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     fundingPurpose: { working: false, facility: true },
 
     eligibility: {
+      employeeCount: {
+        min: 5,
+        description: '상시근로자 5인 이상 중소기업',
+      },
+      // 필수 조건: 스마트공장 계획 필수
+      requiredConditions: {
+        hasSmartFactoryPlan: true,
+      },
       allowedIndustries: ['manufacturing'],
       additionalRequirements: [
         '스마트공장 구축 또는 고도화 계획',
@@ -1229,6 +1516,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kosmes-green-growth',
     institutionId: 'kosmes',
+    track: 'policy_linked',
     name: '탄소중립시설자금',
     shortName: '탄소중립',
     type: 'loan',
@@ -1238,6 +1526,10 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     fundingPurpose: { working: true, facility: true },
 
     eligibility: {
+      employeeCount: {
+        min: 5,
+        description: '상시근로자 5인 이상 중소기업',
+      },
       additionalRequirements: [
         '탄소저감 시설 투자 계획',
         'ESG 경영 도입 기업',
@@ -1299,6 +1591,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kosmes-general-stability',
     institutionId: 'kosmes',
+    track: 'general',
     name: '일반경영안정자금',
     shortName: '경영안정',
     type: 'loan',
@@ -1308,6 +1601,10 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     fundingPurpose: { working: true, facility: true },
 
     eligibility: {
+      employeeCount: {
+        min: 5,
+        description: '상시근로자 5인 이상 중소기업',
+      },
       businessAge: {
         min: 3,
         description: '업력 3년 이상',
@@ -1372,6 +1669,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kodit-securitization',
     institutionId: 'kodit',
+    track: 'guarantee',
     name: '유동화회사보증',
     shortName: '신보 유동화',
     type: 'guarantee',
@@ -1441,6 +1739,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kodit-innovation-growth',
     institutionId: 'kodit',
+    track: 'policy_linked',
     name: '혁신성장보증',
     shortName: '신보 혁신성장',
     type: 'guarantee',
@@ -1456,6 +1755,10 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
         '기술혁신형 중소기업',
       ],
       excludedIndustries: ['부동산임대업', '유흥주점업'],
+      // ★ v3: 필수 조건 추가 - 4차산업혁명 분야 기업만
+      requiredConditions: {
+        is4thIndustry: true,
+      },
     },
 
     terms: {
@@ -1501,6 +1804,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kodit-job-creation',
     institutionId: 'kodit',
+    track: 'policy_linked',
     name: '일자리창출보증',
     shortName: '신보 일자리',
     type: 'guarantee',
@@ -1561,9 +1865,75 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     },
   },
 
+  // ========== 신보 - 여성기업우대보증 ==========
   {
+    id: 'kodit-female',
+    institutionId: 'kodit',
+    track: 'exclusive',
+    name: '여성기업우대보증',
+    shortName: '신보 여성',
+    type: 'guarantee',
+    description: '여성 대표 중소기업 전용 우대 보증',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      preferredOwnerTypes: ['female'],
+      // 필수 조건: 여성기업만 가능
+      requiredConditions: {
+        isFemale: true,
+      },
+      additionalRequirements: [
+        '여성 대표자 기업',
+        '중소기업 또는 소상공인',
+        '여성기업확인서 보유 우대',
+      ],
+      excludedIndustries: ['부동산임대업', '유흥업'],
+    },
+
+    terms: {
+      amount: {
+        max: 3000000000,
+        unit: '억원',
+        description: '기업당 30억원 이내',
+      },
+      guaranteeRatio: {
+        min: 90,
+        max: 100,
+        description: '보증비율 90~100% (여성기업 우대), 보증료 0.5%p 감면',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 1~2주',
+      requiredDocuments: [
+        '사업자등록증',
+        '재무제표',
+        '여성기업확인서 (있는 경우)',
+        '대표자 신분증',
+      ],
+    },
+
+    riskFactors: ['여성 대표자 요건 확인'],
+
+    preferentialConditions: [
+      '보증비율 100% 가능',
+      '보증료 0.5%p 감면',
+      '여성기업확인서 보유 시 추가 우대',
+    ],
+
+    officialUrl: 'https://www.kodit.co.kr',
+
+    meta: {
+      lastUpdated: '2025-01',
+      confidence: 0.85,
+    },
+  },
+
+    {
     id: 'kodit-export',
     institutionId: 'kodit',
+    track: 'policy_linked',
     name: '수출기업보증',
     shortName: '신보 수출',
     type: 'guarantee',
@@ -1579,6 +1949,10 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
         '해외 바이어 확보',
       ],
       excludedIndustries: ['부동산임대업'],
+      // 필수 조건: 수출실적 필수
+      requiredConditions: {
+        hasExportRevenue: true,
+      },
     },
 
     terms: {
@@ -1625,6 +1999,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kibo-ip-collateral',
     institutionId: 'kibo',
+    track: 'policy_linked',
     name: 'IP담보보증',
     shortName: '기보 IP담보',
     type: 'guarantee',
@@ -1639,6 +2014,11 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
         'IP 가치평가 가능',
         '기술사업화 계획',
       ],
+    
+      // 필수 조건: 특허 보유 필수
+      requiredConditions: {
+        hasPatent: true,
+      },
     },
 
     terms: {
@@ -1684,6 +2064,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kibo-rnd',
     institutionId: 'kibo',
+    track: 'policy_linked',
     name: 'R&D보증',
     shortName: '기보 R&D',
     type: 'guarantee',
@@ -1698,6 +2079,11 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
         '기업부설연구소 또는 연구개발전담부서 보유',
         'R&D 과제 수행 기업 우대',
       ],
+    
+      // 필수 조건: R&D 활동 필수
+      requiredConditions: {
+        hasRndActivity: true,
+      },
     },
 
     terms: {
@@ -1743,6 +2129,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kibo-cultural-contents',
     institutionId: 'kibo',
+    track: 'policy_linked',
     name: '문화콘텐츠보증',
     shortName: '기보 문화콘텐츠',
     type: 'guarantee',
@@ -1752,12 +2139,16 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     fundingPurpose: { working: true, facility: true },
 
     eligibility: {
-      allowedIndustries: ['it_service', 'other_service'],
+      allowedIndustries: ['it_service'],  // ★ v3: other_service 제거 (너무 광범위)
       additionalRequirements: [
         '문화콘텐츠 제작/유통 기업',
         '게임, 영상, 음악, 공연, 출판 등',
         '콘텐츠 제작 실적 또는 계획',
       ],
+      // ★ v3: 필수 조건 추가 - 문화콘텐츠 기업만
+      requiredConditions: {
+        isCulturalContents: true,
+      },
     },
 
     terms: {
@@ -1803,6 +2194,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kibo-pre-startup',
     institutionId: 'kibo',
+    track: 'guarantee',
     name: '예비창업자보증',
     shortName: '기보 예비창업',
     type: 'guarantee',
@@ -1868,6 +2260,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'semas-general',
     institutionId: 'semas',
+    track: 'general',
     name: '일반경영안정자금',
     shortName: '소진공 일반',
     type: 'loan',
@@ -1935,9 +2328,82 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
     },
   },
 
+  // ========== 소진공 - 여성기업지원자금 ==========
   {
+    id: 'semas-female',
+    institutionId: 'semas',
+    track: 'exclusive',
+    name: '여성기업지원자금',
+    shortName: '여성기업',
+    type: 'loan',
+    description: '여성 대표 소상공인 전용 지원',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      employeeCount: {
+        max: 5,
+        description: '상시근로자 5인 미만 (제조업 10인 미만)',
+      },
+      preferredOwnerTypes: ['female'],
+      // 필수 조건: 여성기업만 가능
+      requiredConditions: {
+        isFemale: true,
+      },
+      additionalRequirements: [
+        '여성 대표자 기업',
+        '소상공인 해당',
+        '여성기업확인서 보유 우대',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 70000000,
+        unit: '만원',
+        description: '기업당 7천만원 이내',
+      },
+      interestRate: {
+        min: 2.0,
+        max: 3.0,
+        type: 'fixed',
+        description: '연 2.0~3.0% (우대금리)',
+      },
+      loanPeriod: {
+        years: 5,
+        gracePeriod: 2,
+        description: '5년 (거치 2년)',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 2주',
+      requiredDocuments: [
+        '사업자등록증',
+        '여성기업확인서 (있는 경우)',
+        '매출 증빙',
+      ],
+    },
+
+    riskFactors: ['여성 대표자 요건 확인'],
+
+    preferentialConditions: [
+      '여성기업확인서 보유 시 금리 우대',
+      '보증료 감면',
+    ],
+
+    officialUrl: 'https://www.semas.or.kr/web/board/webBoardList.kmdc?bCd=policy_fund',
+
+    meta: {
+      lastUpdated: '2025-01',
+      confidence: 0.9,
+    },
+  },
+
+    {
     id: 'semas-disabled',
     institutionId: 'semas',
+    track: 'exclusive',
     name: '장애인기업지원자금',
     shortName: '장애인기업',
     type: 'loan',
@@ -1948,6 +2414,10 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
 
     eligibility: {
       preferredOwnerTypes: ['disabled'],
+      // 필수 조건: 장애인기업만 가능 (장애인 대표자 또는 장애인표준사업장)
+      requiredConditions: {
+        isDisabledCompany: true,  // isDisabled || isDisabledStandard
+      },
       additionalRequirements: [
         '장애인 대표자 기업',
         '소상공인 해당',
@@ -2003,6 +2473,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'semas-youth',
     institutionId: 'semas',
+    track: 'exclusive',
     name: '청년고용특별자금',
     shortName: '청년소상공인',
     type: 'loan',
@@ -2013,6 +2484,10 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
 
     eligibility: {
       preferredOwnerTypes: ['youth'],
+      // ★ 필수 조건: 청년 대표자 또는 청년 고용 기업
+      requiredConditions: {
+        isYouthCompany: true,  // 만 39세 이하 대표자 또는 청년 고용
+      },
       additionalRequirements: [
         '만 39세 이하 청년 대표자',
         '또는 청년 정규직 고용 소상공인',
@@ -2070,6 +2545,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'seoul-credit-general',
     institutionId: 'seoul_credit',
+    track: 'guarantee',
     name: '서울시 소기업·소상공인 보증',
     shortName: '서울신보 일반',
     type: 'guarantee',
@@ -2140,6 +2616,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'gyeonggi-credit-general',
     institutionId: 'gyeonggi_credit',
+    track: 'guarantee',
     name: '경기도 소기업·소상공인 보증',
     shortName: '경기신보 일반',
     type: 'guarantee',
@@ -2210,6 +2687,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'mss-startup-package',
     institutionId: 'mss',
+    track: 'policy_linked',
     name: '창업성공패키지 연계자금',
     shortName: '창성패 연계',
     type: 'loan',
@@ -2280,6 +2758,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'motie-rnd-fund',
     institutionId: 'motie',
+    track: 'policy_linked',
     name: '산업기술혁신자금',
     shortName: '산업R&D',
     type: 'loan',
@@ -2295,6 +2774,10 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
         '기술개발 실적 보유',
       ],
       excludedIndustries: ['부동산업', '금융업'],
+      // ★ 필수 조건: R&D 활동 또는 계획 필수
+      requiredConditions: {
+        hasRndActivity: true,
+      },
     },
 
     terms: {
@@ -2349,6 +2832,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'keiti-env-growth',
     institutionId: 'keiti',
+    track: 'policy_linked',
     name: '미래환경산업육성융자 (성장기반)',
     shortName: '환경성장자금',
     type: 'loan',
@@ -2422,6 +2906,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'keiti-env-facility',
     institutionId: 'keiti',
+    track: 'policy_linked',
     name: '미래환경산업육성융자 (시설설치)',
     shortName: '환경시설자금',
     type: 'loan',
@@ -2497,6 +2982,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kosmes-youth-startup',
     institutionId: 'kosmes',
+    track: 'exclusive',
     name: '청년전용창업자금',
     shortName: '청년창업',
     type: 'loan',
@@ -2523,6 +3009,10 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       allowedIndustries: ['manufacturing', 'it_service', 'other_service'],
       excludedIndustries: ['부동산임대업', '유흥업', '도박업', '금융업'],
       preferredOwnerTypes: ['youth'],
+      // 필수 조건: 청년기업만 가능
+      requiredConditions: {
+        isYouthCompany: true,
+      },
       additionalRequirements: [
         '대표자 만 39세 이하',
         '창업 3년 미만 또는 예비창업자',
@@ -2593,6 +3083,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kodit-youth-dream',
     institutionId: 'kodit',
+    track: 'exclusive',
     name: '청년희망드림보증',
     shortName: '신보 청년드림',
     type: 'guarantee',
@@ -2609,6 +3100,10 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
       allowedIndustries: ['manufacturing', 'it_service', 'other_service'],
       excludedIndustries: ['부동산임대업', '유흥주점업'],
       preferredOwnerTypes: ['youth'],
+      // 필수 조건: 청년기업만 가능
+      requiredConditions: {
+        isYouthCompany: true,
+      },
       additionalRequirements: [
         '대표자 만 17~39세',
         '창업 7년 이내 기업',
@@ -2667,6 +3162,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kibo-youth-techstar',
     institutionId: 'kibo',
+    track: 'exclusive',
     name: '청년테크스타보증',
     shortName: '기보 청년테크',
     type: 'guarantee',
@@ -2681,6 +3177,10 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
         description: '창업 7년 이내',
       },
       preferredOwnerTypes: ['youth'],
+      // 필수 조건: 청년기업 + 기술력 필요
+      requiredConditions: {
+        isYouthCompany: true,
+      },
       additionalRequirements: [
         '대표자 만 39세 이하',
         '기술력 보유 (특허, 기술인력 등)',
@@ -2740,6 +3240,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'semas-youth-employment',
     institutionId: 'semas',
+    track: 'exclusive',
     name: '청년고용연계자금',
     shortName: '청년고용연계',
     type: 'loan',
@@ -2758,6 +3259,10 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
         description: '상시근로자 10인 미만 (제조업 외 5인 미만)',
       },
       preferredOwnerTypes: ['youth'],
+      // 필수 조건: 청년고용 계획 필수
+      requiredConditions: {
+        hasYouthEmploymentPlan: true,
+      },
       additionalRequirements: [
         '만 39세 이하 청년 대표자',
         '또는 상시근로자 과반수가 청년',
@@ -2822,6 +3327,7 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
   {
     id: 'kodit-youth-startup-special',
     institutionId: 'kodit',
+    track: 'exclusive',
     name: '청년창업특례보증',
     shortName: '신보 청년창업특례',
     type: 'guarantee',
@@ -2836,6 +3342,10 @@ export const POLICY_FUND_KNOWLEDGE_BASE: PolicyFundKnowledge[] = [
         description: '예비창업자 또는 창업 3년 이내',
       },
       preferredOwnerTypes: ['youth'],
+      // 필수 조건: 청년기업만 가능
+      requiredConditions: {
+        isYouthCompany: true,
+      },
       excludedIndustries: ['부동산임대업', '유흥주점업'],
       additionalRequirements: [
         '대표자 만 39세 이하',

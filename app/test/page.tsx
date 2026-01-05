@@ -44,6 +44,12 @@ interface TestProfile {
   ceoAge: number;
   isFemale: boolean;
   isDisabled: boolean;
+  isDisabledStandard: boolean; // 장애인표준사업장
+  isSocialEnterprise: boolean; // 사회적기업 인증
+  isPreSocialEnterprise: boolean; // 예비사회적기업
+  isSocialCooperative: boolean; // 사회적협동조합
+  isSelfSupportEnterprise: boolean; // 자활기업
+  isVillageEnterprise: boolean; // 마을기업
 
   // 제약 조건
   hasTaxDelinquency: boolean;
@@ -61,12 +67,19 @@ interface TestProfile {
   isGlobalStartupAcademyGrad: boolean; // 글로벌창업사관학교 졸업
   hasKiboYouthGuarantee: boolean; // 기보 청년창업우대보증 지원
 
+  // 특수 자금 계획
+  hasSmartFactoryPlan: boolean;     // 스마트공장 구축/고도화 계획
+  hasEsgInvestmentPlan: boolean;    // ESG/탄소중립 시설투자 계획
+  isEmergencySituation: boolean;    // 경영위기/긴급상황
+
   // 성장 전략 및 투자 계획
   hasIpoOrInvestmentPlan: boolean;  // IPO/투자유치 계획
+  hasVentureInvestment: boolean;    // 벤처투자 유치 실적
   acceptsEquityDilution: boolean;   // 지분 희석 감수 가능
   needsLargeFunding: boolean;       // 대규모 자금 필요 (5억+)
   requiredFundingAmount: number;    // 필요 자금 (억원)
-  fundingPurpose: 'working' | 'facility' | 'both';  // 자금 용도
+  fundingPurposeWorking: boolean;   // 운전자금
+  fundingPurposeFacility: boolean;  // 시설자금
 }
 
 interface PresetScenario {
@@ -80,6 +93,51 @@ interface PresetScenario {
 // ============================================================================
 // 프리셋 시나리오 정의
 // ============================================================================
+
+const EMPTY_PROFILE: TestProfile = {
+  companyName: '',
+  industry: 'manufacturing_general',
+  location: '서울',
+  establishedYear: new Date().getFullYear(),
+  annualRevenue: 0,
+  employeeCount: 0,
+  debtRatio: 0,
+  isVenture: false,
+  isInnobiz: false,
+  isMainbiz: false,
+  hasPatent: false,
+  hasResearchInstitute: false,
+  hasExportRecord: false,
+  ceoAge: 40,
+  isFemale: false,
+  isDisabled: false,
+  isDisabledStandard: false,
+  isSocialEnterprise: false,
+  isPreSocialEnterprise: false,
+  isSocialCooperative: false,
+  isSelfSupportEnterprise: false,
+  isVillageEnterprise: false,
+  hasTaxDelinquency: false,
+  existingLoanBalance: 0,
+  isRestart: false,
+  kosmesPreviousCount: 0,
+  currentGuaranteeOrg: 'none',
+  recentYearSubsidyAmount: 0,
+  hasPastDefault: false,
+  isYouthStartupAcademyGrad: false,
+  isGlobalStartupAcademyGrad: false,
+  hasKiboYouthGuarantee: false,
+  hasSmartFactoryPlan: false,
+  hasEsgInvestmentPlan: false,
+  isEmergencySituation: false,
+  hasIpoOrInvestmentPlan: false,
+  hasVentureInvestment: false,
+  acceptsEquityDilution: false,
+  needsLargeFunding: false,
+  requiredFundingAmount: 0,
+  fundingPurposeWorking: false,
+  fundingPurposeFacility: false,
+};
 
 const PRESET_SCENARIOS: PresetScenario[] = [
   {
@@ -104,6 +162,12 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       ceoAge: 32,
       isFemale: false,
       isDisabled: false,
+  isDisabledStandard: false,
+  isSocialEnterprise: false,
+      isPreSocialEnterprise: false,
+      isSocialCooperative: false,
+      isSelfSupportEnterprise: false,
+      isVillageEnterprise: false,
       hasTaxDelinquency: false,
       existingLoanBalance: 0,
       isRestart: false,
@@ -114,11 +178,16 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
+      hasSmartFactoryPlan: false,
+      hasEsgInvestmentPlan: false,
+      isEmergencySituation: false,
       hasIpoOrInvestmentPlan: false,
+      hasVentureInvestment: false,
       acceptsEquityDilution: false,
       needsLargeFunding: false,
       requiredFundingAmount: 3,
-          fundingPurpose: 'both',
+          fundingPurposeWorking: true,
+      fundingPurposeFacility: true,
     },
   },
   {
@@ -143,6 +212,12 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       ceoAge: 34,
       isFemale: false,
       isDisabled: false,
+  isDisabledStandard: false,
+  isSocialEnterprise: false,
+      isPreSocialEnterprise: false,
+      isSocialCooperative: false,
+      isSelfSupportEnterprise: false,
+      isVillageEnterprise: false,
       hasTaxDelinquency: false,
       existingLoanBalance: 0,
       isRestart: false,
@@ -153,11 +228,16 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       isYouthStartupAcademyGrad: true,  // 청창사 졸업 예외 적용
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
+      hasSmartFactoryPlan: false,
+      hasEsgInvestmentPlan: false,
+      isEmergencySituation: false,
       hasIpoOrInvestmentPlan: false,
+      hasVentureInvestment: false,
       acceptsEquityDilution: false,
       needsLargeFunding: false,
       requiredFundingAmount: 5,
-          fundingPurpose: 'both',
+          fundingPurposeWorking: true,
+      fundingPurposeFacility: true,
     },
   },
   {
@@ -182,6 +262,12 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       ceoAge: 50,
       isFemale: false,
       isDisabled: false,
+  isDisabledStandard: false,
+  isSocialEnterprise: false,
+      isPreSocialEnterprise: false,
+      isSocialCooperative: false,
+      isSelfSupportEnterprise: false,
+      isVillageEnterprise: false,
       hasTaxDelinquency: false,
       existingLoanBalance: 0,
       isRestart: false,
@@ -192,11 +278,16 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
+      hasSmartFactoryPlan: false,
+      hasEsgInvestmentPlan: false,
+      isEmergencySituation: false,
       hasIpoOrInvestmentPlan: false,
+      hasVentureInvestment: false,
       acceptsEquityDilution: false,
       needsLargeFunding: false,
       requiredFundingAmount: 1,
-          fundingPurpose: 'both',
+          fundingPurposeWorking: true,
+      fundingPurposeFacility: true,
     },
   },
   {
@@ -221,6 +312,12 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       ceoAge: 48,
       isFemale: false,
       isDisabled: false,
+  isDisabledStandard: false,
+  isSocialEnterprise: false,
+      isPreSocialEnterprise: false,
+      isSocialCooperative: false,
+      isSelfSupportEnterprise: false,
+      isVillageEnterprise: false,
       hasTaxDelinquency: false,
       existingLoanBalance: 5,
       isRestart: false,
@@ -231,11 +328,16 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
+      hasSmartFactoryPlan: false,
+      hasEsgInvestmentPlan: false,
+      isEmergencySituation: false,
       hasIpoOrInvestmentPlan: false,
+      hasVentureInvestment: false,
       acceptsEquityDilution: false,
       needsLargeFunding: false,
       requiredFundingAmount: 5,
-          fundingPurpose: 'both',
+          fundingPurposeWorking: true,
+      fundingPurposeFacility: true,
     },
   },
   {
@@ -260,6 +362,12 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       ceoAge: 42,
       isFemale: false,
       isDisabled: false,
+  isDisabledStandard: false,
+  isSocialEnterprise: false,
+      isPreSocialEnterprise: false,
+      isSocialCooperative: false,
+      isSelfSupportEnterprise: false,
+      isVillageEnterprise: false,
       hasTaxDelinquency: false,
       existingLoanBalance: 2,
       isRestart: false,
@@ -270,11 +378,16 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
+      hasSmartFactoryPlan: false,
+      hasEsgInvestmentPlan: false,
+      isEmergencySituation: false,
       hasIpoOrInvestmentPlan: false,
+      hasVentureInvestment: false,
       acceptsEquityDilution: false,
       needsLargeFunding: false,
       requiredFundingAmount: 10,
-          fundingPurpose: 'both',
+          fundingPurposeWorking: true,
+      fundingPurposeFacility: true,
     },
   },
   {
@@ -299,6 +412,12 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       ceoAge: 55,
       isFemale: false,
       isDisabled: false,
+  isDisabledStandard: false,
+  isSocialEnterprise: false,
+      isPreSocialEnterprise: false,
+      isSocialCooperative: false,
+      isSelfSupportEnterprise: false,
+      isVillageEnterprise: false,
       hasTaxDelinquency: false,
       existingLoanBalance: 10,
       isRestart: false,
@@ -309,11 +428,16 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
+      hasSmartFactoryPlan: false,
+      hasEsgInvestmentPlan: false,
+      isEmergencySituation: false,
       hasIpoOrInvestmentPlan: false,
+      hasVentureInvestment: false,
       acceptsEquityDilution: false,
       needsLargeFunding: false,
       requiredFundingAmount: 8,
-          fundingPurpose: 'both',
+          fundingPurposeWorking: true,
+      fundingPurposeFacility: true,
     },
   },
   {
@@ -338,6 +462,12 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       ceoAge: 35,
       isFemale: false,
       isDisabled: false,
+  isDisabledStandard: false,
+  isSocialEnterprise: false,
+      isPreSocialEnterprise: false,
+      isSocialCooperative: false,
+      isSelfSupportEnterprise: false,
+      isVillageEnterprise: false,
       hasTaxDelinquency: false,
       existingLoanBalance: 0,
       isRestart: true,
@@ -348,11 +478,16 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
+      hasSmartFactoryPlan: false,
+      hasEsgInvestmentPlan: false,
+      isEmergencySituation: false,
       hasIpoOrInvestmentPlan: false,
+      hasVentureInvestment: false,
       acceptsEquityDilution: false,
       needsLargeFunding: false,
       requiredFundingAmount: 3,
-          fundingPurpose: 'both',
+          fundingPurposeWorking: true,
+      fundingPurposeFacility: true,
     },
   },
   {
@@ -377,6 +512,12 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       ceoAge: 45,
       isFemale: false,
       isDisabled: false,
+  isDisabledStandard: false,
+  isSocialEnterprise: false,
+      isPreSocialEnterprise: false,
+      isSocialCooperative: false,
+      isSelfSupportEnterprise: false,
+      isVillageEnterprise: false,
       hasTaxDelinquency: true,
       existingLoanBalance: 15,
       isRestart: false,
@@ -387,11 +528,16 @@ const PRESET_SCENARIOS: PresetScenario[] = [
       isYouthStartupAcademyGrad: false,
       isGlobalStartupAcademyGrad: false,
       hasKiboYouthGuarantee: false,
+      hasSmartFactoryPlan: false,
+      hasEsgInvestmentPlan: false,
+      isEmergencySituation: false,
       hasIpoOrInvestmentPlan: false,
+      hasVentureInvestment: false,
       acceptsEquityDilution: false,
       needsLargeFunding: false,
       requiredFundingAmount: 2,
-          fundingPurpose: 'both',
+          fundingPurposeWorking: true,
+      fundingPurposeFacility: true,
     },
   },
 ];
@@ -447,11 +593,18 @@ const institutionNames: Record<string, string> = {
 
 export default function TestPage() {
   // 상태
-  const [profile, setProfile] = useState<TestProfile>(PRESET_SCENARIOS[0].profile);
+  const [profile, setProfile] = useState<TestProfile>(EMPTY_PROFILE);
   const [results, setResults] = useState<DetailedMatchResult[]>([]);
+  const [trackInfo, setTrackInfo] = useState<{
+    hasSpecializedTrack: boolean;
+    trackType: string | null;
+    trackLabel: string;
+    trackDescription: string;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedPreset, setSelectedPreset] = useState<string>('youth-venture');
+  const [selectedPreset, setSelectedPreset] = useState<string>('');
   const [showAllResults, setShowAllResults] = useState(false);
+  const [fundingAmountInput, setFundingAmountInput] = useState('');
 
   // 업력 계산
   const businessAge = new Date().getFullYear() - profile.establishedYear;
@@ -469,6 +622,7 @@ export default function TestPage() {
     setProfile(preset.profile);
     setSelectedPreset(preset.id);
     setResults([]);
+    setTrackInfo(null);
   };
 
   // 입력값 변경
@@ -512,25 +666,42 @@ export default function TestPage() {
         ],
         // 성장 전략 및 투자 계획
         hasIpoOrInvestmentPlan: profile.hasIpoOrInvestmentPlan,
+        hasVentureInvestment: profile.hasVentureInvestment,
         acceptsEquityDilution: profile.acceptsEquityDilution,
         needsLargeFunding: profile.needsLargeFunding,
         requiredFundingAmount: profile.requiredFundingAmount,
         // 자금 용도
-        requestedFundingPurpose: profile.fundingPurpose,
+        fundingPurposeWorking: profile.fundingPurposeWorking,
+        fundingPurposeFacility: profile.fundingPurposeFacility,
         // 정책자금 이용 이력
         kosmesPreviousCount: profile.kosmesPreviousCount,
         currentGuaranteeOrg: profile.currentGuaranteeOrg,
         existingLoanBalance: profile.existingLoanBalance,
         recentYearSubsidyAmount: profile.recentYearSubsidyAmount,
         hasPastDefault: profile.hasPastDefault,
+        // 특수 자금 계획
+        hasSmartFactoryPlan: profile.hasSmartFactoryPlan,
+        hasEsgInvestmentPlan: profile.hasEsgInvestmentPlan,
+        isEmergencySituation: profile.isEmergencySituation,
+        // 여성기업 여부
+        isFemale: profile.isFemale,
+        // 재창업 여부
+        isRestart: profile.isRestart,
+        // 부채비율
+        debtRatio: profile.debtRatio,
+        // 장애인/사회적기업 인증
+        isDisabled: profile.isDisabled,
+        isDisabledStandard: profile.isDisabledStandard,
+        isSocialEnterprise: profile.isSocialEnterprise,
       };
 
       const result = await matchWithKnowledgeBase(extendedProfile, {
         useAI: false,
-        topN: 30,
+        topN: 5,
       });
 
       setResults(result.results);
+      setTrackInfo(result.trackInfo || null);
     } catch (error) {
       console.error('매칭 실행 실패:', error);
     } finally {
@@ -544,7 +715,7 @@ export default function TestPage() {
   const lowCount = results.filter(r => r.level === 'low').length;
 
   // 표시할 결과
-  const displayResults = showAllResults ? results : results.slice(0, 10);
+  const displayResults = showAllResults ? results : results.slice(0, 5);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -648,7 +819,7 @@ export default function TestPage() {
                         value={profile.annualRevenue}
                         onChange={e => updateProfile('annualRevenue', Math.max(0, Math.min(500, parseFloat(e.target.value) || 0)))}
                         min={0}
-                        max={500}
+                        max={1000}
                         step={0.5}
                         className="w-20 px-2 py-1 text-sm text-right border border-gray-300 rounded focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
                       />
@@ -660,7 +831,7 @@ export default function TestPage() {
                     value={profile.annualRevenue}
                     onChange={e => updateProfile('annualRevenue', parseFloat(e.target.value))}
                     min={0}
-                    max={500}
+                    max={1000}
                     step={0.5}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
                   />
@@ -707,9 +878,9 @@ export default function TestPage() {
                       <input
                         type="number"
                         value={profile.debtRatio}
-                        onChange={e => updateProfile('debtRatio', Math.max(0, Math.min(500, parseInt(e.target.value) || 0)))}
+                        onChange={e => updateProfile('debtRatio', Math.max(0, Math.min(1000, parseInt(e.target.value) || 0)))}
                         min={0}
-                        max={500}
+                        max={1000}
                         className="w-20 px-2 py-1 text-sm text-right border border-gray-300 rounded focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
                       />
                       <span className="text-xs text-gray-500">%</span>
@@ -720,7 +891,7 @@ export default function TestPage() {
                     value={profile.debtRatio}
                     onChange={e => updateProfile('debtRatio', parseInt(e.target.value))}
                     min={0}
-                    max={300}
+                    max={1000}
                     step={10}
                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
                   />
@@ -743,6 +914,12 @@ export default function TestPage() {
                   { key: 'hasResearchInstitute', label: '기업부설연구소' },
                   { key: 'hasExportRecord', label: '수출 실적' },
                   { key: 'isFemale', label: '여성기업 인증' },
+                  { key: 'isDisabledStandard', label: '장애인표준사업장' },
+                  { key: 'isSocialEnterprise', label: '사회적기업 인증' },
+                  { key: 'isPreSocialEnterprise', label: '예비사회적기업' },
+                  { key: 'isSocialCooperative', label: '사회적협동조합' },
+                  { key: 'isSelfSupportEnterprise', label: '자활기업' },
+                  { key: 'isVillageEnterprise', label: '마을기업' },
                 ].map(cert => (
                   <label key={cert.key} className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -852,6 +1029,18 @@ export default function TestPage() {
                     <p className="text-xs text-gray-400 mt-0.5">VC, 엔젤투자, 시리즈 투자 등</p>
                   </div>
                 </label>
+                <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-green-200 hover:bg-green-50 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={profile.hasVentureInvestment}
+                    onChange={e => updateProfile('hasVentureInvestment', e.target.checked)}
+                    className="w-4 h-4 mt-0.5 rounded border-gray-300 text-green-500 focus:ring-green-500"
+                  />
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">벤처투자 유치 실적 있음</span>
+                    <p className="text-xs text-green-600 mt-0.5">최근 2년 내 VC/엔젤 투자 유치 (투융자복합금융 +15점)</p>
+                  </div>
+                </label>
                 <label className="flex items-start gap-3 cursor-pointer p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
                   <input
                     type="checkbox"
@@ -881,18 +1070,22 @@ export default function TestPage() {
                     <label className="text-sm font-medium text-gray-700 whitespace-nowrap">필요 자금</label>
                     <div className="flex items-center gap-2">
                       <input
-                        type="number"
-                        value={profile.requiredFundingAmount}
+                        type="text"
+                        inputMode="decimal"
+                        value={fundingAmountInput}
                         onChange={e => {
-                          const amount = Number(e.target.value);
+                          const value = e.target.value;
+                          // 숫자와 소수점만 허용
+                          if (value !== '' && !/^[0-9]*.?[0-9]*$/.test(value)) return;
+                          setFundingAmountInput(value);
+                          const amount = value === '' ? 0 : parseFloat(value) || 0;
                           setProfile(prev => ({
                             ...prev,
                             requiredFundingAmount: amount,
                             needsLargeFunding: amount >= 5
                           }));
                         }}
-                        min="0"
-                        max="1000"
+                        placeholder="0"
                         className="w-24 px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500"
                       />
                       <span className="text-sm text-gray-600">억원</span>
@@ -900,32 +1093,70 @@ export default function TestPage() {
                     <p className="text-xs text-gray-400 ml-auto">5억 이상 입력 시 대규모 자금 자동 체크</p>
                   </div>
                 </div>
-                {/* 자금 용도 선택 */}
+                {/* 자금 용도 선택 (복수 선택 가능) */}
                 <div className="p-3 rounded-lg border border-gray-200 bg-gray-50">
-                  <div className="flex items-center gap-4">
-                    <label className="text-sm font-medium text-gray-700 whitespace-nowrap">자금 용도</label>
-                    <div className="flex gap-3">
-                      {[
-                        { value: 'working', label: '운전자금', desc: '원자재, 인건비, 마케팅 등' },
-                        { value: 'facility', label: '시설자금', desc: '설비, 공장, 장비 구매' },
-                        { value: 'both', label: '둘 다', desc: '운전 + 시설' },
-                      ].map(option => (
-                        <label key={option.value} className="flex items-center gap-2 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="fundingPurpose"
-                            value={option.value}
-                            checked={profile.fundingPurpose === option.value}
-                            onChange={e => updateProfile('fundingPurpose', e.target.value as 'working' | 'facility' | 'both')}
-                            className="w-4 h-4 text-cyan-500 focus:ring-cyan-500"
-                          />
-                          <div>
-                            <span className="text-sm font-medium text-gray-700">{option.label}</span>
-                            <p className="text-xs text-gray-400">{option.desc}</p>
-                          </div>
-                        </label>
-                      ))}
-                    </div>
+                  <label className="text-sm font-medium text-gray-700 block mb-3">자금 용도 (복수 선택 가능)</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded border border-gray-200 hover:bg-white transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={profile.fundingPurposeWorking}
+                        onChange={e => updateProfile('fundingPurposeWorking', e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-cyan-500 focus:ring-cyan-500"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">운전자금</span>
+                        <p className="text-xs text-gray-400">원자재, 인건비, 마케팅</p>
+                      </div>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded border border-gray-200 hover:bg-white transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={profile.fundingPurposeFacility}
+                        onChange={e => updateProfile('fundingPurposeFacility', e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-cyan-500 focus:ring-cyan-500"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">시설자금</span>
+                        <p className="text-xs text-gray-400">설비, 공장, 장비 구매</p>
+                      </div>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded border border-orange-200 hover:bg-orange-50 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={profile.hasSmartFactoryPlan}
+                        onChange={e => updateProfile('hasSmartFactoryPlan', e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">스마트공장</span>
+                        <p className="text-xs text-orange-500">구축/고도화 계획</p>
+                      </div>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded border border-green-200 hover:bg-green-50 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={profile.hasEsgInvestmentPlan}
+                        onChange={e => updateProfile('hasEsgInvestmentPlan', e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-green-500 focus:ring-green-500"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">ESG/탄소중립</span>
+                        <p className="text-xs text-green-500">친환경 시설투자</p>
+                      </div>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded border border-red-200 hover:bg-red-50 transition-colors col-span-2">
+                      <input
+                        type="checkbox"
+                        checked={profile.isEmergencySituation}
+                        onChange={e => updateProfile('isEmergencySituation', e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">긴급경영안정</span>
+                        <p className="text-xs text-red-500">재해/경영위기 상황</p>
+                      </div>
+                    </label>
                   </div>
                 </div>
               </div>
@@ -960,11 +1191,24 @@ export default function TestPage() {
                   <span className="text-sm text-gray-700">재창업 기업</span>
                 </label>
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    기존 대출 잔액 <span className="text-orange-500 font-bold">{profile.existingLoanBalance}억원</span>
-                    {profile.existingLoanBalance >= 15 && <span className="text-red-500 ml-2">⚠️ 한도 초과 우려</span>}
-                    {profile.existingLoanBalance >= 10 && profile.existingLoanBalance < 15 && <span className="text-orange-500 ml-2">⚠️ 한도 근접</span>}
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-medium text-gray-600">
+                      기존 대출 잔액
+                      {profile.existingLoanBalance >= 15 && <span className="text-red-500 ml-2">⚠️ 한도 초과 우려</span>}
+                      {profile.existingLoanBalance >= 10 && profile.existingLoanBalance < 15 && <span className="text-orange-500 ml-2">⚠️ 한도 근접</span>}
+                    </label>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        value={profile.existingLoanBalance}
+                        onChange={e => updateProfile('existingLoanBalance', Math.max(0, Math.min(50, parseInt(e.target.value) || 0)))}
+                        min={0}
+                        max={50}
+                        className="w-20 px-2 py-1 text-sm text-right border border-gray-300 rounded focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+                      />
+                      <span className="text-xs text-gray-500">억원</span>
+                    </div>
+                  </div>
                   <input
                     type="range"
                     value={profile.existingLoanBalance}
@@ -976,10 +1220,23 @@ export default function TestPage() {
                 </div>
                 {/* 중진공 이용 횟수 */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    중진공 정책자금 이용 횟수 <span className="text-orange-500 font-bold">{profile.kosmesPreviousCount}회</span>
-                    {profile.kosmesPreviousCount >= 4 && <span className="text-red-500 ml-2">⚠️ 졸업제 해당</span>}
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-medium text-gray-600">
+                      중진공 정책자금 이용 횟수
+                      {profile.kosmesPreviousCount >= 4 && <span className="text-red-500 ml-2">⚠️ 졸업제 해당</span>}
+                    </label>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        value={profile.kosmesPreviousCount}
+                        onChange={e => updateProfile('kosmesPreviousCount', Math.max(0, Math.min(10, parseInt(e.target.value) || 0)))}
+                        min={0}
+                        max={10}
+                        className="w-20 px-2 py-1 text-sm text-right border border-gray-300 rounded focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+                      />
+                      <span className="text-xs text-gray-500">회</span>
+                    </div>
+                  </div>
                   <input
                     type="range"
                     value={profile.kosmesPreviousCount}
@@ -1020,14 +1277,28 @@ export default function TestPage() {
                 </div>
                 {/* 최근 1년 수혜액 */}
                 <div>
-                  <label className="block text-xs font-medium text-gray-600 mb-1">
-                    최근 1년 수혜액 <span className="text-orange-500 font-bold">{profile.recentYearSubsidyAmount}억원</span>
-                    {profile.annualRevenue > 0 && profile.recentYearSubsidyAmount > 0 && (
-                      <span className={`ml-2 ${(profile.recentYearSubsidyAmount / profile.annualRevenue) > 0.5 ? 'text-red-500' : (profile.recentYearSubsidyAmount / profile.annualRevenue) > 0.33 ? 'text-orange-500' : 'text-green-500'}`}>
-                        (매출대비 {Math.round((profile.recentYearSubsidyAmount / profile.annualRevenue) * 100)}%)
-                      </span>
-                    )}
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-medium text-gray-600">
+                      최근 1년 수혜액
+                      {profile.annualRevenue > 0 && profile.recentYearSubsidyAmount > 0 && (
+                        <span className={`ml-2 ${(profile.recentYearSubsidyAmount / profile.annualRevenue) > 0.5 ? 'text-red-500' : (profile.recentYearSubsidyAmount / profile.annualRevenue) > 0.33 ? 'text-orange-500' : 'text-green-500'}`}>
+                          (매출대비 {Math.round((profile.recentYearSubsidyAmount / profile.annualRevenue) * 100)}%)
+                        </span>
+                      )}
+                    </label>
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        value={profile.recentYearSubsidyAmount}
+                        onChange={e => updateProfile('recentYearSubsidyAmount', Math.max(0, Math.min(20, parseFloat(e.target.value) || 0)))}
+                        min={0}
+                        max={20}
+                        step={0.5}
+                        className="w-20 px-2 py-1 text-sm text-right border border-gray-300 rounded focus:ring-1 focus:ring-orange-500 focus:border-orange-500"
+                      />
+                      <span className="text-xs text-gray-500">억원</span>
+                    </div>
+                  </div>
                   <input
                     type="range"
                     min={0}
@@ -1101,6 +1372,28 @@ export default function TestPage() {
               </div>
             )}
 
+            {/* 전용 트랙 안내 배너 */}
+            {trackInfo?.hasSpecializedTrack && (
+              <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center flex-shrink-0">
+                    <span className="text-white text-sm font-bold">★</span>
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-purple-800 mb-1">
+                      {trackInfo.trackLabel}
+                    </h4>
+                    <p className="text-sm text-purple-700">
+                      {trackInfo.trackDescription}
+                    </p>
+                    <p className="text-xs text-purple-500 mt-2">
+                      ⚠️ 일반 자금은 정책 목적 부합도가 낮아 후순위로 안내됩니다.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* 결과 목록 */}
             {results.length > 0 ? (
               <div className="space-y-3">
@@ -1108,7 +1401,7 @@ export default function TestPage() {
                   <ResultCard key={result.fundId} result={result} rank={idx + 1} />
                 ))}
 
-                {results.length > 10 && (
+                {results.length > 5 && (
                   <button
                     onClick={() => setShowAllResults(!showAllResults)}
                     className="w-full py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors"
@@ -1121,7 +1414,7 @@ export default function TestPage() {
                     ) : (
                       <>
                         <ChevronDown className="w-4 h-4" />
-                        나머지 {results.length - 10}개 더보기
+                        나머지 {results.length - 5}개 더보기
                       </>
                     )}
                   </button>
@@ -1179,6 +1472,15 @@ function ResultCard({ result, rank }: { result: DetailedMatchResult; rank: numbe
               <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${colors.bg} ${colors.text}`}>
                 {instName}
               </span>
+              {/* 트랙 배지 */}
+              <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${
+                result.track === 'exclusive' ? 'bg-purple-100 text-purple-700' :
+                result.track === 'policy_linked' ? 'bg-blue-100 text-blue-700' :
+                result.track === 'general' ? 'bg-gray-100 text-gray-700' :
+                'bg-yellow-100 text-yellow-700'
+              }`}>
+                {result.trackLabel}
+              </span>
               <div className="flex items-center gap-1">
                 <div className={`w-2 h-2 rounded-full ${level.bg}`} />
                 <span className="text-xs text-gray-500">{level.text}</span>
@@ -1196,6 +1498,14 @@ function ResultCard({ result, rank }: { result: DetailedMatchResult; rank: numbe
       {/* 확장 내용 */}
       {isExpanded && (
         <div className="px-4 pb-4 border-t border-gray-100">
+          {/* 점수 설명 */}
+          {result.scoreExplanation && (
+            <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-100">
+              <div className="text-xs font-medium text-blue-700 mb-1">왜 이 순위인가요?</div>
+              <p className="text-sm text-gray-700">{result.scoreExplanation}</p>
+            </div>
+          )}
+
           {/* 지원 조건 */}
           {result.supportDetails && (
             <div className="mt-3 p-3 bg-gray-50 rounded-lg">
