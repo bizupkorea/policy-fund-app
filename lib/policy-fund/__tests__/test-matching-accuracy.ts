@@ -3,7 +3,7 @@
  * 테스트 기업: 장애인표준사업장 / 임가공업 / 9년차 / 대표 55세
  */
 
-import { matchWithKnowledgeBase } from './matching-engine';
+import { matchWithKnowledgeBase } from '../matching-engine';
 
 const testProfile = {
   // 기본 정보

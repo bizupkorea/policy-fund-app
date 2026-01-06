@@ -5,7 +5,7 @@
  * - 트랙 강제 분기
  */
 
-import { matchWithKnowledgeBase } from './matching-engine';
+import { matchWithKnowledgeBase } from '../matching-engine';
 
 // 테스트 프로필: 장애인표준사업장 / 임가공업 / 9년차 / 대표 55세
 const testProfile = {

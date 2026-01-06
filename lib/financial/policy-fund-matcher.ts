@@ -184,7 +184,7 @@ function evaluateCategoryMatch(
     case 'loan':
     case 'guarantee':
       // 융자/보증: 신용등급, 재무상태 기반
-      if (company.creditRating && parseInt(company.creditRating) <= 6) {
+      if (company.creditRating && company.creditRating <= 6) {
         score += 25;
         reasons.push('신용등급 양호');
       } else {
@@ -486,6 +486,6 @@ export const SAMPLE_POLICY_PROFILE: CompanyPolicyProfile = {
   employeeCount: 30,
   hasExportRevenue: true,
   hasRndActivity: true,
-  creditRating: '5',
+  creditRating: 5,
   isVentureCompany: true,
 };

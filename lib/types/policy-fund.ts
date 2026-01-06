@@ -143,7 +143,7 @@ export interface CompanyPolicyProfile {
   hasRndActivity?: boolean;     // R&D 활동 유무
 
   // 신용 정보
-  creditRating?: string;        // 신용등급
+  creditRating?: number;        // 신용등급 (1~10, 낮을수록 좋음)
 
   // 특수 조건
   isSocialEnterprise?: boolean; // 사회적기업

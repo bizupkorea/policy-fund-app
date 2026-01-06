@@ -18,6 +18,16 @@ import {
   POLICY_FUND_KNOWLEDGE_BASE,
 } from './knowledge-base';
 
+// 공통 유틸리티 함수 import (포맷팅만 사용)
+// 조건 체크 함수들은 로컬 CheckResult 타입('bonus', 'unknown' 상태 필요)과 호환 안 됨
+import {
+  formatCurrency,
+  getIndustryLabel,
+  getCertificationLabel,
+  getOwnerCharLabel,
+  getExceptionLabel,
+} from './validation-utils';
+
 // ============================================================================
 // 타입 정의
 // ============================================================================
@@ -415,6 +425,8 @@ function checkExclusionConditions(
   };
 }
 
+// 조건 체크 함수들 (로컬 CheckResult 타입 사용 - 'bonus', 'unknown' 상태 필요)
+
 function checkBusinessAge(
   businessAge: number,
   criteria: {
@@ -437,16 +449,12 @@ function checkBusinessAge(
     };
   }
 
-  // 업력 초과 시 예외 조건 체크
   if (max !== undefined && businessAge > max) {
-    // 예외 조건이 있고, 기업이 해당 예외에 해당하는지 확인
     if (maxWithException && exceptions && companyExceptions) {
       const hasValidException = exceptions.some(ex =>
         companyExceptions.includes(ex)
       );
-
       if (hasValidException && businessAge <= maxWithException) {
-        // 예외 조건 적용으로 통과
         const matchedExceptions = exceptions.filter(ex =>
           companyExceptions.includes(ex)
         );
@@ -460,7 +468,6 @@ function checkBusinessAge(
       }
     }
 
-    // 예외 조건이 있지만 기업이 해당하지 않는 경우 경고 표시
     if (maxWithException && exceptions && (!companyExceptions || companyExceptions.length === 0)) {
       return {
         condition: '업력 조건',
@@ -486,18 +493,6 @@ function checkBusinessAge(
   };
 }
 
-/** 예외 조건 라벨 변환 */
-function getExceptionLabel(exception: BusinessAgeException): string {
-  const labels: Record<BusinessAgeException, string> = {
-    youth_startup_academy: '청년창업사관학교 졸업',
-    global_startup_academy: '글로벌창업사관학교 졸업',
-    kibo_youth_guarantee: '기보 청년창업우대보증',
-    startup_success_package: '창업성공패키지 선정',
-    tips_program: 'TIPS 프로그램 선정',
-  };
-  return labels[exception] || exception;
-}
-
 function checkRevenue(
   revenue: number,
   criteria: { min?: number; max?: number; description: string }
@@ -505,23 +500,19 @@ function checkRevenue(
   const { min, max, description } = criteria;
 
   if (min !== undefined && revenue < min) {
-    const minLabel = formatCurrency(min);
-    const currentLabel = formatCurrency(revenue);
     return {
       condition: '매출 조건',
       status: 'fail',
-      description: `최소 매출 ${minLabel} 이상 필요 (현재: ${currentLabel})`,
+      description: `최소 매출 ${formatCurrency(min)} 이상 필요 (현재: ${formatCurrency(revenue)})`,
       impact: -20,
     };
   }
 
   if (max !== undefined && revenue > max) {
-    const maxLabel = formatCurrency(max);
-    const currentLabel = formatCurrency(revenue);
     return {
       condition: '매출 조건',
       status: 'fail',
-      description: `매출 ${maxLabel} 이하 기업 대상 (현재: ${currentLabel})`,
+      description: `매출 ${formatCurrency(max)} 이하 기업 대상 (현재: ${formatCurrency(revenue)})`,
       impact: -20,
     };
   }
@@ -572,7 +563,6 @@ function checkIndustry(
   allowedIndustries: IndustryCategory[] | undefined,
   excludedIndustries: string[] | undefined
 ): CheckResult {
-  // 제외 업종 체크
   if (excludedIndustries && industryDetail) {
     for (const excluded of excludedIndustries) {
       if (industryDetail.includes(excluded)) {
@@ -586,7 +576,6 @@ function checkIndustry(
     }
   }
 
-  // 허용 업종 체크
   if (allowedIndustries) {
     if (allowedIndustries.includes('all')) {
       return {
@@ -923,55 +912,9 @@ function generateRecommendation(
 }
 
 // ============================================================================
-// 유틸리티 함수
+// 유틸리티 함수 → validation-utils.ts에서 import됨 (중복 제거)
+// formatCurrency, getIndustryLabel, getCertificationLabel, getOwnerCharLabel
 // ============================================================================
-
-function formatCurrency(value: number): string {
-  if (value >= 100000000) {
-    return `${(value / 100000000).toFixed(0)}억원`;
-  }
-  if (value >= 10000) {
-    return `${(value / 10000).toFixed(0)}만원`;
-  }
-  return `${value}원`;
-}
-
-function getIndustryLabel(industry: IndustryCategory): string {
-  const labels: Record<IndustryCategory, string> = {
-    manufacturing: '제조업',
-    it_service: 'IT/지식서비스업',
-    wholesale_retail: '도소매업',
-    food_service: '음식점업',
-    construction: '건설업',
-    logistics: '운수/물류업',
-    other_service: '기타 서비스업',
-    all: '전 업종',
-  };
-  return labels[industry] || industry;
-}
-
-function getCertificationLabel(cert: CompanyScale): string {
-  const labels: Record<CompanyScale, string> = {
-    micro: '소공인',
-    small: '소기업',
-    medium: '중소기업',
-    venture: '벤처기업',
-    innobiz: '이노비즈',
-    mainbiz: '메인비즈',
-  };
-  return labels[cert] || cert;
-}
-
-function getOwnerCharLabel(char: OwnerCharacteristic): string {
-  const labels: Record<OwnerCharacteristic, string> = {
-    youth: '청년',
-    female: '여성',
-    disabled: '장애인',
-    veteran: '보훈대상자',
-    general: '일반',
-  };
-  return labels[char] || char;
-}
 
 // ============================================================================
 // 필터링 함수 (상위 모듈에서 사용)
@@ -1009,4 +952,170 @@ export function quickScreening(
   topN: number = 5
 ): EligibilityResult[] {
   return checkAllFundsEligibility(profile).slice(0, topN);
+}
+
+// ============================================================================
+// 해결 가이드 (eligibility-checker-new.ts에서 이동)
+// ============================================================================
+
+/**
+ * 해결 가이드 타입
+ */
+export interface Suggestion {
+  issue: string;                // 문제 (탈락 사유)
+  solution: string;             // 해결 방안
+  alternatives?: string[];      // 대안 정책자금
+  actionRequired?: boolean;     // 즉시 조치 필요 여부
+}
+
+/**
+ * 탈락 사유별 해결 가이드 제공
+ */
+export function getSuggestions(failedChecks: string[]): Suggestion[] {
+  const suggestions: Suggestion[] = [];
+
+  for (const reason of failedChecks) {
+    const lowerReason = reason.toLowerCase();
+
+    // 업력 초과
+    if (lowerReason.includes('업력') && (lowerReason.includes('초과') || lowerReason.includes('이내'))) {
+      suggestions.push({
+        issue: reason,
+        solution: '창업초기 자금 대신 성장기/도약기 기업 대상 자금을 검토하세요.',
+        alternatives: ['중진공 신성장기반자금', '신보 일반보증', '기보 기술보증']
+      });
+    }
+
+    // 업력 미달
+    else if (lowerReason.includes('업력') && lowerReason.includes('미달')) {
+      suggestions.push({
+        issue: reason,
+        solution: '업력 요건이 낮은 창업 초기기업 대상 자금을 검토하세요.',
+        alternatives: ['중진공 혁신창업사업화자금', '소진공 소상공인정책자금']
+      });
+    }
+
+    // 청년 조건 미충족
+    else if (lowerReason.includes('청년') && lowerReason.includes('미충족')) {
+      suggestions.push({
+        issue: reason,
+        solution: '청년전용 자금은 만 39세 이하만 가능합니다. 일반 정책자금을 검토하세요.',
+        alternatives: ['중진공 신성장기반자금', '중진공 긴급경영안정자금']
+      });
+    }
+
+    // 매출 미달
+    else if (lowerReason.includes('매출') && lowerReason.includes('미달')) {
+      suggestions.push({
+        issue: reason,
+        solution: '매출 조건이 낮은 소상공인/소기업 대상 자금을 검토하세요.',
+        alternatives: ['소진공 일반경영안정자금', '신용보증재단 일반보증', '지역신보 소기업보증']
+      });
+    }
+
+    // 매출 초과
+    else if (lowerReason.includes('매출') && lowerReason.includes('초과')) {
+      suggestions.push({
+        issue: reason,
+        solution: '매출 기준이 높은 중기업/중견기업 대상 자금을 검토하세요.',
+        alternatives: ['산업은행 시설자금', '기업은행 중기대출']
+      });
+    }
+
+    // 세금 체납
+    else if (lowerReason.includes('세금') || lowerReason.includes('체납')) {
+      suggestions.push({
+        issue: reason,
+        solution: '체납 세금을 완납한 후 납세증명서를 다시 발급받으세요.',
+        actionRequired: true
+      });
+    }
+
+    // 기대출
+    else if (lowerReason.includes('기존') && lowerReason.includes('대출')) {
+      suggestions.push({
+        issue: reason,
+        solution: '기존 정책자금 대출 상환 후 재신청하거나, 한도 내 추가 신청을 검토하세요.',
+        alternatives: ['보증 상품으로 전환', '일반 은행 대출']
+      });
+    }
+
+    // 업종 제외
+    else if (lowerReason.includes('업종') && (lowerReason.includes('제외') || lowerReason.includes('아님'))) {
+      suggestions.push({
+        issue: reason,
+        solution: '업종 제한이 없거나 해당 업종을 지원하는 자금을 검토하세요.',
+        alternatives: ['전업종 대상 정책자금 검색']
+      });
+    }
+
+    // 지역 제한
+    else if (lowerReason.includes('지역') || lowerReason.includes('소재지')) {
+      suggestions.push({
+        issue: reason,
+        solution: '전국 대상 정책자금 또는 해당 지역 지자체 자금을 검토하세요.',
+        alternatives: ['중진공 전국 단위 자금', '해당 지역 신용보증재단']
+      });
+    }
+
+    // 필수 인증 미보유
+    else if (lowerReason.includes('인증') && lowerReason.includes('미보유')) {
+      suggestions.push({
+        issue: reason,
+        solution: '필요한 인증을 취득하거나, 인증 요건이 없는 자금을 검토하세요.',
+        alternatives: ['인증 취득 지원 사업', '일반 정책자금']
+      });
+    }
+
+    // 직원수 관련
+    else if (lowerReason.includes('직원')) {
+      suggestions.push({
+        issue: reason,
+        solution: '기업 규모에 맞는 자금을 검토하세요.',
+        alternatives: ['소상공인 대상 자금', '중소기업 대상 자금']
+      });
+    }
+
+    // 기타
+    else {
+      suggestions.push({
+        issue: reason,
+        solution: '해당 조건을 충족하거나 다른 정책자금을 검토하세요.'
+      });
+    }
+  }
+
+  return suggestions;
+}
+
+/**
+ * 자격 심사 결과 요약 문자열 생성
+ */
+export function summarizeEligibility(result: EligibilityResult): string {
+  if (result.isEligible) {
+    return `✅ 자격 충족 (${result.passedConditions.length}개 조건 통과)`;
+  }
+
+  return `❌ 자격 미충족 (탈락 사유 ${result.failedConditions.length}개)\n` +
+         result.failedConditions.map((c, i) => `  ${i + 1}. ${c.description}`).join('\n');
+}
+
+/**
+ * 해결 가이드 요약 문자열 생성
+ */
+export function summarizeSuggestions(suggestions: Suggestion[]): string {
+  if (suggestions.length === 0) {
+    return '해결 가이드 없음';
+  }
+
+  return suggestions.map((s, i) => {
+    let text = `${i + 1}. ${s.issue}\n   → ${s.solution}`;
+    if (s.alternatives && s.alternatives.length > 0) {
+      text += `\n   💡 대안: ${s.alternatives.join(', ')}`;
+    }
+    if (s.actionRequired) {
+      text += '\n   ⚠️ 즉시 조치 필요';
+    }
+    return text;
+  }).join('\n\n');
 }

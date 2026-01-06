@@ -73,6 +73,77 @@ export type MatchResultTrack = 'exclusive' | 'policy_linked' | 'general' | 'guar
  */
 export type ConfidenceLabel = '전용·우선' | '유력' | '대안' | '플랜B';
 
+// ============================================================================
+// ★ v7: 3분류 결과 타입 (matched / conditional / excluded)
+// ============================================================================
+
+/**
+ * 트랙 한글 라벨 타입
+ */
+export type TrackLabel = '전용' | '정책연계' | '일반' | '보증';
+
+/**
+ * MATCHED: 하드룰 충족 + 결정변수 확정
+ * - confidence: HIGH(전용자격 보유+정책목적 일치) / MEDIUM(정책연계/일반)
+ * - label: 전용·우선 / 유력 / 대안 / 플랜B
+ */
+export interface MatchedFund {
+  program_name: string;
+  agency: string;
+  track: TrackLabel;
+  label: '전용·우선' | '유력' | '대안' | '플랜B';
+  confidence?: 'HIGH' | 'MEDIUM'; // exclusive는 점수 계산 대상 아님 → confidence 없음
+  why: string;
+  hard_rules_passed: string[];
+  _score?: number; // 내부 정렬용 (JSON 출력 시 삭제)
+  _sizeScore?: number; // 기업규모 적합도 (JSON 출력 시 삭제)
+  _fundId?: string; // 자금 ID (기업규모 매칭용)
+}
+
+/**
+ * CONDITIONAL: 하드룰 충족 + 결정변수 미확정
+ * - what_is_missing: 미확정 결정 변수
+ * - how_to_confirm: 확정 방법 안내
+ */
+export interface ConditionalFund {
+  program_name: string;
+  agency: string;
+  track: TrackLabel;
+  what_is_missing: string;
+  how_to_confirm: string;
+}
+
+/**
+ * EXCLUDED: 하드룰 미충족
+ */
+export interface ExcludedFund {
+  program_name: string;
+  agency: string;
+  track: TrackLabel;
+  excluded_reason: '트랙차단' | '요건불충족' | '정책목적불일치' | '근거부족' | '기업규모 미충족' | '체납' | '신용문제';
+  rule_triggered: string;
+  note: string;
+}
+
+/**
+ * 트랙 결정 정보
+ */
+export interface TrackDecision {
+  allowed_tracks: TrackLabel[];
+  blocked_tracks: TrackLabel[];
+  why: string;
+}
+
+/**
+ * 3분류 최종 결과
+ */
+export interface ClassifiedMatchResult {
+  track_decision: TrackDecision;
+  matched: MatchedFund[];
+  conditional: ConditionalFund[];
+  excluded: ExcludedFund[];
+}
+
 /**
  * 트랙 한글 라벨
  */
@@ -516,17 +587,6 @@ export function getMatchLevelLabel(level: MatchLevel): string {
   }
 }
 
-/**
- * 적합도 등급 색상
- */
-export function getMatchLevelColor(level: MatchLevel): string {
-  switch (level) {
-    case 'high': return 'green';
-    case 'medium': return 'yellow';
-    case 'low': return 'gray';
-  }
-}
-
 // ============================================================================
 // 상세 매칭 엔진 (파싱된 조건 필드 기반)
 // ============================================================================
@@ -544,6 +604,13 @@ export interface ExtendedCompanyProfile extends CompanyPolicyProfile {
   hasPreviousSupport?: boolean;  // 기존 수혜 이력
   isYouthCompany?: boolean;      // 청년기업 여부
   hasExistingLoan?: boolean;     // 기대출 여부
+  // 대표자 특성
+  isFemale?: boolean;            // 여성 대표자
+  isDisabled?: boolean;          // 장애인 대표자
+  isDisabledStandard?: boolean;  // 장애인표준사업장
+  isSocialEnterprise?: boolean;  // 사회적기업
+  // 신용등급
+  creditRating?: number;         // 신용등급 (1~10, 낮을수록 좋음)
   // 업력 예외 조건 (청년전용창업자금 업력 확대 등)
   businessAgeExceptions?: Array<'youth_startup_academy' | 'global_startup_academy' | 'kibo_youth_guarantee' | 'startup_success_package' | 'tips_program'>;
   // 성장 전략 및 투자 계획
@@ -570,6 +637,39 @@ export interface ExtendedCompanyProfile extends CompanyPolicyProfile {
   existingLoanBalance?: number;  // 기존 정책자금 잔액 (억원)
   recentYearSubsidyAmount?: number;  // 최근 1년 정책자금 수혜액 (억원)
   hasPastDefault?: boolean;  // 과거 부실/사고 이력 (보증사고, 대출연체 등)
+
+  // ★ 체납 상세 (신규)
+  taxDelinquencyStatus?: 'none' | 'active' | 'resolving' | 'installment';
+  // none: 없음, active: 체납 중 (정리 안 됨), resolving: 정리 중, installment: 분납 확정
+
+  // ★ 신용문제 상세 (신규)
+  creditIssueStatus?: 'none' | 'current' | 'past_resolved';
+  // none: 없음, current: 현재 연체/부실, past_resolved: 과거만 (현재 정상)
+
+  // ★ 재창업 사유 (신규)
+  restartReason?: 'covid' | 'recession' | 'partner_default' | 'disaster' | 'illness' | 'policy' | 'other' | 'unknown';
+
+  // ★ 스마트공장 계획 (신규)
+  hasSmartFactoryPlan?: boolean;
+
+  // ★ 성장 전략 (신규)
+  hasVentureInvestment?: boolean;     // 벤처투자 유치 실적
+
+  // ★ 자금 용도 (신규) - 복수 선택 가능
+  fundingPurposeWorking?: boolean;    // 운전자금
+  fundingPurposeFacility?: boolean;   // 시설자금
+
+  // ★ ESG/탄소중립 (신규)
+  hasEsgInvestmentPlan?: boolean;     // ESG/탄소중립 시설투자 계획
+
+  // ★ 긴급경영안정 (신규)
+  isEmergencySituation?: boolean;     // 경영위기/긴급상황
+
+  // ★ 부채비율 (신규)
+  debtRatio?: number;                 // 부채비율 (%)
+
+  // ★ 특허 보유 (신규)
+  hasPatent?: boolean;                // 특허/실용신안 보유
 }
 
 /**
@@ -702,6 +802,10 @@ export function calculateDetailedMatchScore(
     eligibilityReasons,
     ineligibilityReasons,
     supportDetails,
+    // 필수 필드 추가
+    track: 'general' as const,
+    trackLabel: '일반' as const,
+    scoreExplanation: `매칭 점수: ${score}점 (${level === 'high' ? '높음' : level === 'medium' ? '보통' : '낮음'})`,
   };
 }
 
@@ -1135,6 +1239,8 @@ import {
   POLICY_FUND_KNOWLEDGE_BASE,
   INSTITUTIONS,
   IndustryCategory,
+  CompanyScale,
+  OwnerCharacteristic,
 } from './knowledge-base';
 
 /**
@@ -1194,7 +1300,7 @@ export function convertToKBProfile(
   }
 
   // ★★★ v3: 대표자 특성 매핑 (청년/여성/장애인 등) ★★★
-  const ownerCharacteristics = [];
+  const ownerCharacteristics: OwnerCharacteristic[] = [];
   if (profile.isYouthCompany) ownerCharacteristics.push('youth');
   if (profile.isFemale) ownerCharacteristics.push('female');
   if (profile.isDisabled || profile.isDisabledStandard) ownerCharacteristics.push('disabled');
@@ -1228,7 +1334,7 @@ export function convertToKBProfile(
 /**
  * ★ v4: 순위 역할 태그 생성
  */
-function getRankRole(rank, track) {
+function getRankRole(rank: number, track: MatchResultTrack): string {
   if (!rank) return '';
   if (rank <= 2 && track === 'exclusive') return '[최우선] ';
   if (rank === 3) return '[대안] ';
@@ -1240,7 +1346,7 @@ function getRankRole(rank, track) {
 /**
  * ★ v4: "왜 이 순위인지" 한 문장 설명 생성
  */
-function generateRankReason(rank, track, fundName) {
+function generateRankReason(rank: number, track: MatchResultTrack, fundName: string): string {
   if (rank === 1) return `${fundName}은(는) 귀사의 정책 자격과 목적이 가장 정확히 일치하는 자금입니다.`;
   if (rank === 2 && track === 'exclusive') return `${fundName}은(는) 1순위와 함께 검토할 수 있는 전용 자금입니다.`;
   if (rank === 2) return `${fundName}은(는) 1순위 다음으로 정합성이 높은 자금입니다.`;
@@ -1253,7 +1359,7 @@ function generateRankReason(rank, track, fundName) {
 /**
  * ★ v6: 확신도 라벨 생성 (점수 대신 UI에 표시)
  */
-function generateConfidenceLabel(rank, track, score) {
+function generateConfidenceLabel(rank: number, track: MatchResultTrack, score: number): ConfidenceLabel {
   if (rank <= 2 && track === 'exclusive') return '전용·우선';
   if (rank <= 2 && track === 'policy_linked') return '유력';
   if (rank === 3 || (track === 'general' && score >= 60) || (track === 'policy_linked' && score >= 50)) return '대안';
@@ -1263,7 +1369,7 @@ function generateConfidenceLabel(rank, track, score) {
 /**
  * ★ v4: 점수 설명 문구 생성
  */
-function generateScoreExplanation(score, track, fundName, rank) {
+function generateScoreExplanation(score: number, track: MatchResultTrack, fundName: string, rank: number): string {
   const trackKor = TRACK_LABELS[track];
   const rankRole = getRankRole(rank, track);
 
@@ -1315,7 +1421,7 @@ export function convertToDetailedMatchResult(
     // ★ v4+: 트랙 정보
     track,
     trackLabel: TRACK_LABELS[track],
-    scoreExplanation: generateScoreExplanation(score, track, eligibilityResult.fundName),
+    scoreExplanation: generateScoreExplanation(score, track, eligibilityResult.fundName, 0),
 
     score,
     level: score >= 70 ? 'high' : score >= 40 ? 'medium' : 'low',
@@ -1378,11 +1484,9 @@ export async function matchWithKnowledgeBase(
     eligibilityResults = eligibilityResults.filter(r => !envFundIds.includes(r.fundId));
   }
 
-  // ★★★ v5: 트랙 강제 분기 (핵심) ★★★
-  // 전용자격 보유자 → general 제외, 비보유자 → exclusive 제외
-  let allowedTracks;
-  let blockedTracks;
-
+  // ★★★ v5+v8: 트랙 강제 분기 (완화됨) ★★★
+  // 전용자격 보유자 → 전용자금 우선, 일반자금도 후순위로 표시
+  // 전용자격 미보유자 → exclusive 제외 (신청 불가)
   const hasExclusiveQualification =
     profile.isDisabledStandard ||
     profile.isDisabled ||
@@ -1390,13 +1494,9 @@ export async function matchWithKnowledgeBase(
     profile.isRestart ||
     profile.isFemale;
 
-  if (hasExclusiveQualification) {
-    allowedTracks = ['exclusive', 'policy_linked', 'guarantee'];
-    blockedTracks = ['general'];
-  } else {
-    allowedTracks = ['policy_linked', 'general', 'guarantee'];
-    blockedTracks = ['exclusive'];
-  }
+  // 전용자격 보유 시: 차단 없음 (정렬 우선순위로 처리)
+  // 전용자격 미보유 시: exclusive만 차단 (신청 불가)
+  const blockedTracks = hasExclusiveQualification ? [] : ['exclusive'];
 
   // blocked_tracks에 해당하는 자금 필터링
   eligibilityResults = eligibilityResults.filter(r => {
@@ -1406,9 +1506,37 @@ export async function matchWithKnowledgeBase(
     return !blockedTracks.includes(fundTrack);
   });
 
+  // ★★★ v8: targetScale 하드컷 ★★★
+  // 기업규모가 자금의 targetScale에 포함되지 않으면 제외
+  eligibilityResults = eligibilityResults.filter(r => {
+    const fund = POLICY_FUND_KNOWLEDGE_BASE.find(f => f.id === r.fundId);
+    if (!fund?.targetScale || fund.targetScale.length === 0) return true;
+
+    // startup, large 등을 표준 CompanyScale로 매핑
+    const sizeMap: Record<string, CompanyScale> = {
+      'startup': 'small', 'small': 'small', 'medium': 'medium', 'large': 'medium',
+      'micro': 'micro', 'venture': 'venture', 'innobiz': 'innobiz', 'mainbiz': 'mainbiz',
+    };
+    const companyScale: CompanyScale = sizeMap[profile.companySize || 'small'] || 'small';
+    return fund.targetScale.includes(companyScale);
+  });
+
+  // ★★★ v8: 체납/신용 하드컷 ★★★
+  // 체납 active 또는 신용문제 current → 전체 제외
+  if (profile.taxDelinquencyStatus === 'active' || profile.creditIssueStatus === 'current') {
+    eligibilityResults = []; // 모든 자금 제외
+  }
+
   // ★★★ v3: isEligible 필터링 (핵심) ★★★
   // eligibility-checker가 fail 판정한 자금은 결과에서 제외
   eligibilityResults = eligibilityResults.filter(r => r.isEligible);
+
+  // ★★★ v8: 키워드 기반 하드컷 ★★★
+  // 스마트공장/탄소중립/청년/기술/수출/투자 등 키워드 자금 필터링
+  eligibilityResults = eligibilityResults.filter(r => {
+    const keywordResult = checkKeywordExclusion(r.fundName, profile);
+    return !keywordResult?.excluded;
+  });
 
   // 결과 변환 (자금 규모별 매칭 보너스 적용)
   // 중요: 보너스 점수 적용 후 재정렬 필요!
@@ -1592,21 +1720,43 @@ export async function matchWithKnowledgeBase(
     });
   }
 
-  // ★ v4: 트랙 우선순위 정렬 (exclusive > policy_linked > general > guarantee)
-  // ★ v6: 상한 5개 제한
+  // ★ v8: 4단계 정렬 우선순위
+  // 1순위: 특화자금 (exclusive)
+  // 2순위: 기업규모 적합도 (중소기업 전용 자금 우선)
+  // 3순위: 직접대출 우선 (보증 후순위)
+  // 4순위: 점수순
   const MAX_RESULTS = 5;
+
+  // 기업규모 적합도 점수 계산
+  resultsWithBonus.forEach(r => {
+    const fund = POLICY_FUND_KNOWLEDGE_BASE.find(f => f.id === r.fundId);
+    (r as any)._sizeScore = calculateSizeMatchScore(fund?.id, profile.companySize);
+  });
+
   const sortedResults = resultsWithBonus
     .sort((a, b) => {
-      // 1단계: 트랙 우선순위 비교
-      const aTrackPriority = TRACK_PRIORITY[a.track] ?? 99;
-      const bTrackPriority = TRACK_PRIORITY[b.track] ?? 99;
-      if (aTrackPriority !== bTrackPriority) {
-        return aTrackPriority - bTrackPriority;
-      }
-      // 2단계: 같은 트랙 내에서 점수 비교
+      // 1) 특화자금(전용) 우선
+      if (a.track === 'exclusive' && b.track !== 'exclusive') return -1;
+      if (b.track === 'exclusive' && a.track !== 'exclusive') return 1;
+
+      // 2) 기업규모 적합도 (높을수록 우선)
+      const aSizeScore = (a as any)._sizeScore || 50;
+      const bSizeScore = (b as any)._sizeScore || 50;
+      if (aSizeScore !== bSizeScore) return bSizeScore - aSizeScore;
+
+      // 3) 직접대출 우선 (보증 후순위)
+      if (a.track !== 'guarantee' && b.track === 'guarantee') return -1;
+      if (b.track !== 'guarantee' && a.track === 'guarantee') return 1;
+
+      // 4) 점수순
       return b.score - a.score;
     })
     .slice(0, Math.min(topN, MAX_RESULTS));
+
+  // 내부 정렬용 필드 제거
+  sortedResults.forEach(r => {
+    delete (r as any)._sizeScore;
+  });
 
   // ★ v4+v6: 순위/확신도 라벨 할당
   const results = sortedResults.map((result, index) => {
@@ -1644,38 +1794,724 @@ export async function matchWithKnowledgeBase(
   };
 }
 
+// ============================================================================
+// ★ v7: 3분류 매칭 함수 (matched / conditional / excluded)
+// ============================================================================
+
 /**
- * 하이브리드 매칭: 기업마당 API + Knowledge Base
- * - 기업마당 API에서 가져온 프로그램과 Knowledge Base를 모두 활용
+ * 트랙을 한글 라벨로 변환
  */
-export function hybridMatch(
-  programs: PolicyFundProgram[],
-  company: ExtendedCompanyProfile
-): {
-  apiResults: DetailedMatchResult[];    // 기업마당 API 기반
-  kbResults: DetailedMatchResult[];     // Knowledge Base 기반
-  combined: DetailedMatchResult[];       // 합산 결과
-} {
-  // 1. 기업마당 API 프로그램 매칭 (기존 로직)
-  const apiResults = programs.map(program => {
-    return calculateDetailedMatchScore(program, company);
-  });
+function getTrackLabelKorean(track: MatchResultTrack): TrackLabel {
+  const map: Record<MatchResultTrack, TrackLabel> = {
+    exclusive: '전용',
+    policy_linked: '정책연계',
+    general: '일반',
+    guarantee: '보증',
+  };
+  return map[track] || '일반';
+}
 
-  // 2. Knowledge Base 매칭 (신규)
-  const kbProfile = convertToKBProfile(company);
-  const eligibilityResults = checkAllFundsEligibility(kbProfile);
-  const kbResults = eligibilityResults.map(result => {
-    const fund = POLICY_FUND_KNOWLEDGE_BASE.find(f => f.id === result.fundId);
-    return convertToDetailedMatchResult(result, fund);
-  });
+/**
+ * excluded_reason 분류
+ */
+function categorizeExcludedReason(
+  failedConditions: Array<{ condition: string; description: string }>
+): '요건불충족' | '정책목적불일치' | '근거부족' {
+  for (const cond of failedConditions) {
+    const desc = cond.description.toLowerCase();
+    const condName = cond.condition.toLowerCase();
 
-  // 3. 결과 합산 (중복 제거, 점수순 정렬)
-  const combined = [...apiResults, ...kbResults]
-    .sort((a, b) => b.score - a.score);
+    // 청년/여성/장애인 등 대표자 자격 불일치
+    if (condName.includes('청년') || condName.includes('여성') || condName.includes('장애인') ||
+        desc.includes('만 39세') || desc.includes('대표자')) {
+      return '요건불충족';
+    }
+
+    // R&D/수출/기술 근거 없음
+    if (condName.includes('r&d') || condName.includes('기술') || condName.includes('수출') ||
+        condName.includes('특허') || desc.includes('기술 근거') || desc.includes('수출 실적')) {
+      return '근거부족';
+    }
+
+    // 재창업 자금 부적격
+    if (condName.includes('재창업') || desc.includes('재창업')) {
+      return '정책목적불일치';
+    }
+  }
+
+  return '요건불충족';
+}
+
+/**
+ * rule_triggered 문구 생성
+ */
+function extractRuleTriggered(
+  failedConditions: Array<{ condition: string; description: string }>
+): string {
+  if (failedConditions.length === 0) return '';
+
+  const cond = failedConditions[0];
+  const condName = cond.condition;
+  const desc = cond.description;
+
+  // 대표자 연령
+  if (condName.includes('청년') || desc.includes('만 39세')) {
+    return '대표자연령불일치';
+  }
+
+  // 기술/R&D
+  if (condName.includes('R&D') || condName.includes('기술') || desc.includes('기술 근거')) {
+    return '기술근거없음';
+  }
+
+  // 수출
+  if (condName.includes('수출') || desc.includes('수출')) {
+    return '수출없음';
+  }
+
+  // 재창업
+  if (condName.includes('재창업') || desc.includes('재창업')) {
+    return '재창업요건미충족';
+  }
+
+  // 업력
+  if (condName.includes('업력') || desc.includes('업력')) {
+    return '업력조건불충족';
+  }
+
+  // 기타
+  return condName.replace(/\s+/g, '');
+}
+
+/**
+ * 결정변수 미확정 여부 체크
+ * - 자금별 필수 결정변수가 프로필에서 undefined/null인 경우 true
+ */
+function hasUndeterminedDecisionVariables(
+  eligibilityResult: EligibilityResult,
+  profile: ExtendedCompanyProfile,
+  fund?: PolicyFundKnowledge
+): { undetermined: boolean; missingVars: string[]; whatToFix: string[] } {
+  const missingVars: string[] = [];
+  const whatToFix: string[] = [];
+
+  if (!fund) {
+    return { undetermined: false, missingVars: [], whatToFix: [] };
+  }
+
+  const reqCond = fund.eligibility.requiredConditions;
+  if (!reqCond) {
+    return { undetermined: false, missingVars: [], whatToFix: [] };
+  }
+
+  // 수출실적 필요한 자금인데 수출 여부가 undefined (미입력)
+  if (reqCond.hasExportRevenue === true && profile.hasExportRevenue === undefined) {
+    missingVars.push('수출실적/계획');
+    whatToFix.push('수출 실적 또는 수출 계획 보유 여부를 확인하세요');
+  }
+
+  // R&D 필요한 자금인데 기술자산 여부가 undefined
+  if (reqCond.hasRndActivity === true && profile.hasRndActivity === undefined) {
+    missingVars.push('R&D/기술자산');
+    whatToFix.push('특허, 기업부설연구소, R&D 활동 여부를 확인하세요');
+  }
+
+  // 신용등급 조건이 있는데 신용등급 미입력
+  if (fund.eligibility.creditRating && profile.creditRating === undefined) {
+    missingVars.push('신용등급');
+    whatToFix.push('기업 신용등급을 확인하세요 (NICE, KED 등)');
+  }
+
+  // 매출 조건이 있는데 매출 미입력
+  if (fund.eligibility.revenue && profile.revenue === undefined) {
+    missingVars.push('연매출');
+    whatToFix.push('최근 결산 기준 연매출액을 확인하세요');
+  }
+
+  // 직원수 조건이 있는데 직원수 미입력
+  if (fund.eligibility.employeeCount && profile.employeeCount === undefined) {
+    missingVars.push('직원수');
+    whatToFix.push('4대보험 가입 기준 직원수를 확인하세요');
+  }
+
+  // 업력 예외 조건이 있는데 예외 적용 여부 불명확
+  if (fund.eligibility.businessAge?.exceptions &&
+      fund.eligibility.businessAge.exceptions.length > 0 &&
+      profile.businessAge > (fund.eligibility.businessAge.max || 0) &&
+      (profile.businessAgeExceptions === undefined || profile.businessAgeExceptions.length === 0)) {
+    missingVars.push('업력예외조건');
+    whatToFix.push('청년창업사관학교, TIPS 등 업력 예외 해당 여부를 확인하세요');
+  }
 
   return {
-    apiResults,
-    kbResults,
-    combined,
+    undetermined: missingVars.length > 0,
+    missingVars,
+    whatToFix,
+  };
+}
+
+/**
+ * EligibilityResult를 MatchedFund로 변환
+ * v8: confidence, label, why 필드 사용
+ */
+function toMatchedFund(
+  result: EligibilityResult,
+  detailedResult: DetailedMatchResult,
+  fund?: PolicyFundKnowledge,
+  rank?: number
+): MatchedFund {
+  const trackKor = getTrackLabelKorean(detailedResult.track);
+  const label = generateLabel(rank || 1, detailedResult.track, trackKor);
+  const confidence = determineConfidence(detailedResult.track, trackKor, detailedResult.score);
+
+  return {
+    program_name: result.fundName,
+    agency: fund ? INSTITUTIONS[fund.institutionId]?.name || result.institutionId : result.institutionId,
+    track: trackKor,
+    label,
+    confidence,
+    why: '', // 정렬 후 generateRankReason으로 채워짐
+    hard_rules_passed: result.passedConditions.map(c => c.description),
+    _score: detailedResult.score, // 내부 정렬용
+    _fundId: fund?.id, // 기업규모 매칭용
+  };
+}
+
+/**
+ * label 생성: 전용·우선 / 유력 / 대안 / 플랜B
+ */
+function generateLabel(rank: number, track: MatchResultTrack, trackKor: TrackLabel): '전용·우선' | '유력' | '대안' | '플랜B' {
+  // 1~2순위 + 전용 → 전용·우선
+  if (rank <= 2 && track === 'exclusive') return '전용·우선';
+  // 1~2순위 + 정책연계 → 유력
+  if (rank <= 2 && track === 'policy_linked') return '유력';
+  // 3순위 → 대안
+  if (rank === 3) return '대안';
+  // 4~5순위 또는 보증 → 플랜B
+  return '플랜B';
+}
+
+/**
+ * confidence 결정: HIGH / MEDIUM
+ */
+function determineConfidence(track: MatchResultTrack, trackKor: TrackLabel, score: number): 'HIGH' | 'MEDIUM' {
+  // 전용 트랙 + 점수 50 이상 → HIGH
+  if (track === 'exclusive' && score >= 50) return 'HIGH';
+  // 정책연계 + 점수 70 이상 → HIGH
+  if (track === 'policy_linked' && score >= 70) return 'HIGH';
+  // 그 외 MEDIUM
+  return 'MEDIUM';
+}
+
+/**
+ * EligibilityResult를 ConditionalFund로 변환
+ * v8: what_is_missing, how_to_confirm 필드 사용
+ */
+function toConditionalFund(
+  result: EligibilityResult,
+  detailedResult: DetailedMatchResult,
+  missingVars: string[],
+  whatToFix: string[],
+  fund?: PolicyFundKnowledge
+): ConditionalFund {
+  return {
+    program_name: result.fundName,
+    agency: fund ? INSTITUTIONS[fund.institutionId]?.name || result.institutionId : result.institutionId,
+    track: getTrackLabelKorean(detailedResult.track),
+    what_is_missing: missingVars.join(', ') || '결정 변수 미확정',
+    how_to_confirm: whatToFix.join(' / ') || '추가 서류 제출 시 확정 가능',
+  };
+}
+
+/**
+ * EligibilityResult를 ExcludedFund로 변환
+ */
+function toExcludedFund(
+  result: EligibilityResult,
+  fund?: PolicyFundKnowledge
+): ExcludedFund {
+  const failedConds = result.failedConditions.map(c => ({
+    condition: c.condition,
+    description: c.description,
+  }));
+
+  const fundTrack = fund?.track || 'general';
+
+  return {
+    program_name: result.fundName,
+    agency: fund ? INSTITUTIONS[fund.institutionId]?.name || result.institutionId : result.institutionId,
+    track: getTrackLabelKorean(fundTrack),
+    excluded_reason: categorizeExcludedReason(failedConds),
+    rule_triggered: extractRuleTriggered(failedConds),
+    note: result.failedConditions.length > 0
+      ? result.failedConditions[0].description
+      : '자격 요건 미충족',
+  };
+}
+
+/**
+ * 키워드 기반 추가 차단 룰 체크
+ * - 청년/기술/수출/투자 키워드 자금에 대해 근거 없으면 즉시 EXCLUDED
+ */
+function checkKeywordExclusion(
+  fundName: string,
+  profile: ExtendedCompanyProfile
+): { excluded: boolean; reason: '근거부족' | '요건불충족'; rule: string; note: string } | null {
+  const name = fundName.toLowerCase();
+
+  // 청년 키워드: 대표자 연령 체크
+  if (name.includes('청년') && !profile.isYouthCompany) {
+    return {
+      excluded: true,
+      reason: '요건불충족',
+      rule: '대표자연령불일치',
+      note: '청년 전용 자금: 만 39세 이하 대표자만 신청 가능',
+    };
+  }
+
+  // 기술/혁신/R&D 키워드: 특허/R&D/기술평가 근거 체크
+  if ((name.includes('기술') || name.includes('혁신') || name.includes('r&d') || name.includes('테크')) &&
+      !profile.hasRndActivity && !profile.hasPatent) {
+    return {
+      excluded: true,
+      reason: '근거부족',
+      rule: '기술근거없음',
+      note: '기술/혁신 자금: 특허, R&D 활동, 기술평가 근거 필요',
+    };
+  }
+
+  // 수출/신시장 키워드: 수출 실적 체크
+  if ((name.includes('수출') || name.includes('신시장') || name.includes('해외')) &&
+      !profile.hasExportRevenue) {
+    return {
+      excluded: true,
+      reason: '근거부족',
+      rule: '수출실적없음',
+      note: '수출/해외진출 자금: 수출 실적 또는 해외진출 계획 필요',
+    };
+  }
+
+  // 투자/스케일업 키워드: 투자유치/지분희석 의사 체크
+  if ((name.includes('투자') || name.includes('스케일업') || name.includes('투융자')) &&
+      !profile.hasIpoOrInvestmentPlan && !profile.acceptsEquityDilution) {
+    return {
+      excluded: true,
+      reason: '근거부족',
+      rule: '투자의사없음',
+      note: '투자 연계 자금: 투자유치 계획 또는 지분희석 감수 의사 필요',
+    };
+  }
+
+  // 스마트공장 키워드: 스마트공장 구축/고도화 계획 체크
+  if ((name.includes('스마트공장') || name.includes('스마트팩토리') || name.includes('스마트제조')) &&
+      !profile.hasSmartFactoryPlan) {
+    return {
+      excluded: true,
+      reason: '근거부족',
+      rule: '스마트공장계획없음',
+      note: '스마트공장 자금: 스마트공장 구축 또는 고도화 계획 필요',
+    };
+  }
+
+  // 탄소중립/친환경 키워드: 환경 투자 계획 체크
+  if ((name.includes('탄소') || name.includes('친환경') || name.includes('그린') || name.includes('녹색')) &&
+      !profile.fundingPurposeDetails?.environmentInvestment) {
+    return {
+      excluded: true,
+      reason: '근거부족',
+      rule: '환경투자계획없음',
+      note: '탄소중립/친환경 자금: 환경설비 투자 또는 친환경 전환 계획 필요',
+    };
+  }
+
+  // ★ 긴급경영안정 키워드: 경영위기 상황 체크
+  if (name.includes('긴급') && !(profile as any).isEmergencySituation) {
+    return {
+      excluded: true,
+      reason: '요건불충족',
+      rule: '긴급상황없음',
+      note: '긴급경영안정자금: 재해·재난 피해, 매출 급감(전년 대비 20%↓), 구조조정 등 경영위기 상황 필요',
+    };
+  }
+
+  return null;
+}
+
+/**
+ * 신용 상태 체크
+ * - 체납/신용문제에 따른 하드컷 또는 조건부 처리
+ * @returns status: 'pass' | 'excluded' | 'conditional'
+ */
+function checkCreditStatus(
+  profile: ExtendedCompanyProfile,
+  fundTrack: string
+): { status: 'pass' | 'excluded' | 'conditional'; reason: string; rule: string; note: string } {
+  // 체납 체크
+  if (profile.taxDelinquencyStatus === 'active') {
+    return {
+      status: 'excluded',
+      reason: '체납',
+      rule: '체납_미정리',
+      note: '국세/지방세 체납 중인 기업은 정책자금 신청이 제한됩니다. 체납 해소 후 신청 가능합니다.',
+    };
+  }
+
+  // 신용문제 현재 진행 중
+  if (profile.creditIssueStatus === 'current') {
+    return {
+      status: 'excluded',
+      reason: '신용문제',
+      rule: '현재_연체',
+      note: '현재 연체/부실 상태인 기업은 정책자금 신청이 제한됩니다.',
+    };
+  }
+
+  // 재창업 + 전용자금 + 정당한 사유 → pass
+  if (profile.isRestart && fundTrack === 'exclusive') {
+    const validReasons = ['covid', 'recession', 'partner_default', 'disaster', 'illness', 'policy'];
+    if (profile.restartReason && validReasons.includes(profile.restartReason)) {
+      return {
+        status: 'pass',
+        reason: '',
+        rule: '',
+        note: '',
+      };
+    }
+  }
+
+  // 체납 정리 중 / 분납 확정 → conditional
+  if (profile.taxDelinquencyStatus === 'resolving' || profile.taxDelinquencyStatus === 'installment') {
+    return {
+      status: 'conditional',
+      reason: '체납정리중',
+      rule: '체납_정리중',
+      note: '체납 정리 중/분납 확정 상태 - 완납 후 신청 가능 여부 확인 필요',
+    };
+  }
+
+  // 신용문제 과거 (현재 정상) → conditional
+  if (profile.creditIssueStatus === 'past_resolved') {
+    return {
+      status: 'conditional',
+      reason: '과거신용문제',
+      rule: '과거_연체해소',
+      note: '과거 연체 이력 있음 - 현재 정상 상태이나 심사 시 확인 필요',
+    };
+  }
+
+  // 재창업 + 사유 불명확 → conditional
+  if (profile.isRestart && profile.restartReason === 'unknown') {
+    return {
+      status: 'conditional',
+      reason: '재창업사유확인필요',
+      rule: '재창업_사유미확인',
+      note: '재창업 사유가 불명확합니다. 정당한 사유 확인 시 재도전자금 신청 가능',
+    };
+  }
+
+  return {
+    status: 'pass',
+    reason: '',
+    rule: '',
+    note: '',
+  };
+}
+
+/**
+ * 기업규모 적합도 계산
+ * - 자금의 대상 기업규모와 실제 기업규모 비교
+ * @returns 100(정확 일치), 80(범위 내), 50(불일치/기본)
+ */
+function calculateSizeMatchScore(
+  fundId: string | undefined,
+  companySize: string | undefined
+): number {
+  if (!fundId || !companySize) return 50;
+
+  // startup, large 등을 표준 CompanyScale로 매핑
+  const sizeMap: Record<string, CompanyScale> = {
+    'startup': 'small',
+    'small': 'small',
+    'medium': 'medium',
+    'large': 'medium',
+    'micro': 'micro',
+    'venture': 'venture',
+    'innobiz': 'innobiz',
+    'mainbiz': 'mainbiz',
+  };
+  const normalizedSize: CompanyScale = sizeMap[companySize] || 'small';
+
+  const fund = POLICY_FUND_KNOWLEDGE_BASE.find(f => f.id === fundId);
+  if (!fund) return 50;
+
+  // 자금의 대상 기업규모 (기본: 소기업, 중기업)
+  const targetScales = fund.targetScale || ['small', 'medium'];
+
+  // 기업 규모별 호환 그룹
+  const sizeCompatibility: Record<string, string[]> = {
+    'micro': ['micro', 'small'],
+    'small': ['small', 'micro', 'medium'],
+    'medium': ['medium', 'small'],
+    'venture': ['venture', 'small', 'medium'],
+    'innobiz': ['innobiz', 'small', 'medium'],
+    'mainbiz': ['mainbiz', 'small', 'medium'],
+  };
+
+  const compatibleSizes = sizeCompatibility[normalizedSize] || [normalizedSize];
+
+  // 정확히 일치: 100점
+  if (targetScales.includes(normalizedSize as CompanyScale)) return 100;
+  // 호환 범위 내: 80점
+  if (compatibleSizes.some(s => targetScales.includes(s as CompanyScale))) return 80;
+  // 불일치: 50점
+  return 50;
+}
+
+
+/**
+ * ★ v7: 3분류 매칭 수행
+ * - matched: 하드룰 + 결정변수 모두 충족
+ * - conditional: 하드룰 충족 + 결정변수 미확정
+ * - excluded: 하드룰 미충족
+ */
+export async function classifyMatchResults(
+  profile: ExtendedCompanyProfile,
+  options: {
+    topN?: number;
+  } = {}
+): Promise<ClassifiedMatchResult> {
+  const { topN = 10 } = options;
+
+  // 프로필 변환
+  const kbProfile = convertToKBProfile(profile);
+
+  // 모든 자금에 대해 자격 체크 수행 (필터링 전)
+  let allEligibilityResults = checkAllFundsEligibility(kbProfile);
+
+  // ===== 트랙 강제 분기 결정 =====
+  const hasExclusiveQualification =
+    profile.isDisabledStandard ||
+    profile.isDisabled ||
+    profile.isSocialEnterprise ||
+    profile.isRestart ||
+    profile.isFemale;
+
+  // 트랙 결정 정보 생성
+  let allowedTracks: TrackLabel[];
+  let blockedTracksKorean: TrackLabel[];
+  let trackDecisionWhy: string;
+
+  if (hasExclusiveQualification) {
+    // 전용자격 보유 → 전용자금 우선 (일반자금도 후순위로 포함)
+    allowedTracks = ['전용', '정책연계', '일반', '보증'];
+    blockedTracksKorean = []; // 차단 없음, 정렬 우선순위로 처리
+
+    const qualifications: string[] = [];
+    if (profile.isDisabledStandard) qualifications.push('장애인표준사업장');
+    if (profile.isDisabled) qualifications.push('장애인기업');
+    if (profile.isSocialEnterprise) qualifications.push('사회적기업');
+    if (profile.isRestart) qualifications.push('재창업기업');
+    if (profile.isFemale) qualifications.push('여성기업');
+
+    trackDecisionWhy = qualifications.join(', ') + ' 자격 보유 → 전용자금 우선 추천';
+  } else {
+    // 전용자격 미보유 → 전용트랙 차단 (신청 불가)
+    allowedTracks = ['정책연계', '일반', '보증'];
+    blockedTracksKorean = ['전용'];
+    trackDecisionWhy = '전용자격 미보유 → 전용자금 신청 불가';
+  }
+
+  const trackDecision: TrackDecision = {
+    allowed_tracks: allowedTracks,
+    blocked_tracks: blockedTracksKorean,
+    why: trackDecisionWhy,
+  };
+
+  // 내부용 차단 트랙 리스트 (영문)
+  // 전용자격 보유 시: 차단 없음 (정렬 우선순위로 처리)
+  // 전용자격 미보유 시: exclusive만 차단 (신청 불가)
+  const blockedTracks = hasExclusiveQualification ? [] : ['exclusive'];
+
+  // 3분류 배열
+  const matched: MatchedFund[] = [];
+  const conditional: ConditionalFund[] = [];
+  const excluded: ExcludedFund[] = [];
+
+  for (const result of allEligibilityResults) {
+    const fund = POLICY_FUND_KNOWLEDGE_BASE.find(f => f.id === result.fundId);
+    const fundTrack = fund?.track || 'general';
+    const fundTrackKorean = getTrackLabelKorean(fundTrack);
+
+    // 1) 트랙 차단 체크 (트랙차단)
+    if (blockedTracks.includes(fundTrack)) {
+      excluded.push({
+        program_name: result.fundName,
+        agency: fund ? INSTITUTIONS[fund.institutionId]?.name || result.institutionId : result.institutionId,
+        track: fundTrackKorean,
+        excluded_reason: '트랙차단',
+        rule_triggered: hasExclusiveQualification ? '전용자격보유→일반트랙제외' : '전용자격미보유→전용트랙제외',
+        note: hasExclusiveQualification
+          ? '전용자격 보유 기업은 일반자금 대신 전용자금을 우선 이용합니다'
+          : '전용자금은 해당 자격(장애인/여성/재창업 등) 보유 기업만 신청 가능합니다',
+      });
+      continue;
+    }
+
+    // 2) 키워드 기반 차단 체크
+    const keywordExclusion = checkKeywordExclusion(result.fundName, profile);
+    if (keywordExclusion && keywordExclusion.excluded) {
+      excluded.push({
+        program_name: result.fundName,
+        agency: fund ? INSTITUTIONS[fund.institutionId]?.name || result.institutionId : result.institutionId,
+        track: fundTrackKorean,
+        excluded_reason: keywordExclusion.reason,
+        rule_triggered: keywordExclusion.rule,
+        note: keywordExclusion.note,
+      });
+      continue;
+    }
+
+    // 2.5) targetScale 하드컷 - 기업규모 미충족 시 EXCLUDED
+    if (fund?.targetScale && fund.targetScale.length > 0) {
+      // startup, large 등은 small로 매핑
+      const sizeMap: Record<string, CompanyScale> = {
+        'startup': 'small',
+        'small': 'small',
+        'medium': 'medium',
+        'large': 'medium',
+        'micro': 'micro',
+        'venture': 'venture',
+        'innobiz': 'innobiz',
+        'mainbiz': 'mainbiz',
+      };
+      const companyScale: CompanyScale = sizeMap[profile.companySize || 'small'] || 'small';
+      if (!fund.targetScale.includes(companyScale)) {
+        excluded.push({
+          program_name: result.fundName,
+          agency: INSTITUTIONS[fund.institutionId]?.name || result.institutionId,
+          track: fundTrackKorean,
+          excluded_reason: '기업규모 미충족',
+          rule_triggered: `대상: ${fund.targetScale.join(', ')} / 귀사: ${companyScale}`,
+          note: `이 자금은 ${fund.targetScale.map(s => s === 'micro' ? '소공인' : s === 'small' ? '소기업' : s === 'medium' ? '중기업' : s).join(', ')} 전용입니다.`,
+        });
+        continue;
+      }
+    }
+
+    // 2.6) 신용 상태 체크 - 체납/신용문제 시 분기 처리
+    const creditStatus = checkCreditStatus(profile, fundTrack);
+    if (creditStatus.status === 'excluded') {
+      excluded.push({
+        program_name: result.fundName,
+        agency: fund ? INSTITUTIONS[fund.institutionId]?.name || result.institutionId : result.institutionId,
+        track: fundTrackKorean,
+        excluded_reason: creditStatus.reason as ExcludedFund['excluded_reason'],
+        rule_triggered: creditStatus.rule,
+        note: creditStatus.note,
+      });
+      continue;
+    }
+
+    // 3) 하드룰 미충족 → EXCLUDED
+    if (!result.isEligible) {
+      excluded.push(toExcludedFund(result, fund));
+      continue;
+    }
+
+    // DetailedMatchResult 생성 (점수/트랙 계산용)
+    const detailedResult = convertToDetailedMatchResult(result, fund);
+
+    // 2.7) 신용 상태 conditional 체크
+    if (creditStatus.status === 'conditional') {
+      conditional.push({
+        program_name: result.fundName,
+        agency: fund ? INSTITUTIONS[fund.institutionId]?.name || result.institutionId : result.institutionId,
+        track: fundTrackKorean,
+        what_is_missing: creditStatus.reason,
+        how_to_confirm: creditStatus.note,
+      });
+      continue;
+    }
+
+    // 결정변수 미확정 체크
+    const { undetermined, missingVars, whatToFix } = hasUndeterminedDecisionVariables(
+      result, profile, fund
+    );
+
+    if (undetermined) {
+      // CONDITIONAL: 하드룰 충족 + 결정변수 미확정
+      // ★ conditional은 matched에 절대 포함 안 됨
+      // ★ 점수 계산, 정렬, 순위 산정에서 완전히 제외
+      conditional.push(toConditionalFund(result, detailedResult, missingVars, whatToFix, fund));
+      continue;
+    }
+
+    // MATCHED: 하드룰 + 결정변수 모두 충족
+    const matchedFund = toMatchedFund(result, detailedResult, fund);
+    // 기업규모 적합도 계산
+    matchedFund._sizeScore = calculateSizeMatchScore(fund?.id, profile.companySize);
+    matched.push(matchedFund);
+  }
+
+  // ★ 4단계 정렬 우선순위
+  // 1순위: 특화자금 (exclusive)
+  // 2순위: 기업규모 적합도
+  // 3순위: 직접대출 우선 (보증 후순위)
+  // 4순위: 점수순
+  matched.sort((a, b) => {
+    // 1) 특화자금(전용) 우선
+    if (a.track === '전용' && b.track !== '전용') return -1;
+    if (b.track === '전용' && a.track !== '전용') return 1;
+
+    // 2) 기업규모 적합도 (높을수록 우선)
+    const aSizeScore = a._sizeScore || 50;
+    const bSizeScore = b._sizeScore || 50;
+    if (aSizeScore !== bSizeScore) return bSizeScore - aSizeScore;
+
+    // 3) 직접대출 우선 (보증 후순위)
+    if (a.track !== '보증' && b.track === '보증') return -1;
+    if (b.track !== '보증' && a.track === '보증') return 1;
+
+    // 4) 점수순
+    return (b._score || 0) - (a._score || 0);
+  });
+
+  // matched 상한 5개 제한
+  const MAX_MATCHED = 5;
+  const limitedMatched = matched.slice(0, MAX_MATCHED);
+
+  // 내부 정렬용 필드 제거 (JSON 출력에서 제외)
+  limitedMatched.forEach(fund => {
+    delete fund._score;
+    delete fund._sizeScore;
+    delete fund._fundId;
+  });
+
+  // v8: 순위 기반 why, label 재설정
+  // exclusive는 점수 계산 대상 아님 → confidence 제거, 상단 고정
+  // 3순위 이후는 "왜 1·2순위가 아닌지"를 전제로 추천됨
+  limitedMatched.forEach((fund, index) => {
+    const rank = index + 1;
+    const trackCode = fund.track === '전용' ? 'exclusive' :
+      fund.track === '정책연계' ? 'policy_linked' :
+      fund.track === '보증' ? 'guarantee' : 'general';
+
+    // exclusive 트랙: confidence 제거 (점수 계산 대상 아님)
+    if (trackCode === 'exclusive') {
+      delete fund.confidence;
+      fund.label = '전용·우선';
+      fund.why = `${fund.program_name}은(는) 귀사의 전용자격에 해당하는 우선 검토 자금입니다.`;
+    } else {
+      // 비-exclusive: 순위에 맞는 이유 및 label 생성
+      fund.why = generateRankReason(rank, trackCode, fund.program_name);
+      fund.label = generateLabel(rank, trackCode, fund.track);
+    }
+  });
+
+  return {
+    track_decision: trackDecision,
+    matched: limitedMatched,
+    conditional,
+    excluded,
   };
 }

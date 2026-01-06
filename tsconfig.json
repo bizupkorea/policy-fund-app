@@ -48,6 +48,7 @@
     "lib/financial/workflow-analyzer.ts",
     "lib/financial/workflow-personas.ts",
     "lib/financial/workflow-templates.ts",
-    "lib/financial/__tests__"
+    "lib/financial/__tests__",
+    "lib/policy-fund/__tests__"
   ]
 }

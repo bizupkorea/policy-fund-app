@@ -1,0 +1,941 @@
+/**
+ * 중진공(KOSMES) 정책자금 목록
+ *
+ * 중소벤처기업진흥공단 - 중소기업 정책자금 융자 전문 기관
+ * 2026년 기준 총 4.4조원 규모
+ *
+ * @lastUpdated 2026-01
+ */
+
+import type { PolicyFundKnowledge, FundTrack, IndustryCategory, CompanyScale } from '../knowledge-base';
+
+// 타입 재정의 없이 knowledge-base에서 가져옴
+export type { PolicyFundKnowledge };
+
+/**
+ * 중진공(KOSMES) 정책자금 프로그램 목록
+ */
+export const kosmesFunds: PolicyFundKnowledge[] = [
+  // ========== 혁신창업사업화자금 - 일반창업기반 ==========
+  {
+    id: 'kosmes-startup-general',
+    institutionId: 'kosmes',
+    track: 'general',
+    name: '혁신창업사업화자금 (일반창업)',
+    shortName: '일반창업',
+    type: 'loan',
+    description: '창업 초기 기업의 사업화를 위한 자금 - 기술력 없이도 신청 가능',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      businessAge: {
+        max: 7,
+        description: '창업 7년 이내 중소기업',
+      },
+      revenue: {
+        min: 50000000,  // 최소 5천만원 (사업 안정성)
+        max: 12000000000,  // 120억
+        description: '연매출 5천만원 이상 120억원 이하',
+      },
+      allowedIndustries: ['manufacturing', 'it_service', 'other_service'],
+      excludedIndustries: ['부동산업', '유흥업', '금융업'],
+      additionalRequirements: [
+        '사업 안정성 입증 (매출 실적)',
+        '신용관리정보 미등록',
+      ],
+      exclusionConditions: [
+        '휴·폐업 중인 기업',
+        '세금 체납 중인 기업',
+        '금융기관 연체 중인 기업',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 6000000000,
+        unit: '억원',
+        description: '기업당 연간 60억원 이내',
+      },
+      interestRate: {
+        min: 2.0,
+        max: 3.5,
+        type: 'variable',
+        description: '정책자금 기준금리 + 가산금리 (연 2.0~3.5%)',
+      },
+      loanPeriod: {
+        years: 5,
+        gracePeriod: 2,
+        description: '5년 이내 (거치 2년 포함)',
+      },
+      repaymentMethod: '거치 후 원금균등분할상환',
+    },
+
+    practicalInfo: {
+      processingTime: '접수 후 약 2~4주',
+      requiredDocuments: [
+        '사업계획서',
+        '재무제표 (최근 3개년)',
+        '사업자등록증',
+        '법인등기부등본',
+      ],
+      applicationMethod: '중진공 온라인 신청 (www.kosmes.or.kr)',
+      contactInfo: '중진공 콜센터 1357',
+    },
+
+    riskFactors: [
+      '최근 매출 감소 시 심사 불리',
+      '창업 후 실적 부족 시 한도 축소 가능',
+      '재무제표 정리 필수',
+    ],
+
+    preferentialConditions: [
+      '청년창업기업 금리 0.3%p 우대',
+      '여성기업 금리 우대',
+    ],
+
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
+
+    meta: {
+      lastUpdated: '2026-01',
+      validFrom: '2025-01-01',
+      confidence: 0.9,
+      notes: '기술력 없이도 신청 가능한 일반창업 트랙',
+    },
+  },
+
+  // ========== 혁신창업사업화자금 - 기술기반 ==========
+  {
+    id: 'kosmes-startup-tech',
+    institutionId: 'kosmes',
+    track: 'general',
+    name: '혁신창업사업화자금 (기술기반)',
+    shortName: '기술창업',
+    type: 'loan',
+    description: '기술력 보유 창업기업 전용 - 벤처/이노비즈/특허 필수',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      businessAge: {
+        max: 7,
+        description: '창업 7년 이내 중소기업',
+      },
+
+      // 필수 조건: 기술력 (벤처/이노비즈/특허/연구소 중 1개) 필수
+      requiredConditions: {
+        hasTechnologyCertification: true,
+      },
+      revenue: {
+        max: 12000000000,
+        description: '연매출 120억원 이하',
+      },
+      allowedIndustries: ['manufacturing', 'it_service', 'other_service'],
+      excludedIndustries: ['부동산업', '유흥업', '금융업'],
+      requiredCertifications: ['venture', 'innobiz', 'patent', 'research_institute'],
+      additionalRequirements: [
+        '기술성 평가 통과 필수',
+        '벤처/이노비즈/특허/연구소 중 1개 이상 보유',
+        '신용관리정보 미등록',
+      ],
+      exclusionConditions: [
+        '휴·폐업 중인 기업',
+        '세금 체납 중인 기업',
+        '금융기관 연체 중인 기업',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 6000000000,
+        unit: '억원',
+        description: '기업당 연간 60억원 이내',
+      },
+      interestRate: {
+        min: 2.0,
+        max: 3.5,
+        type: 'variable',
+        description: '정책자금 기준금리 + 가산금리 (연 2.0~3.5%)',
+      },
+      loanPeriod: {
+        years: 5,
+        gracePeriod: 2,
+        description: '5년 이내 (거치 2년 포함)',
+      },
+      repaymentMethod: '거치 후 원금균등분할상환',
+    },
+
+    practicalInfo: {
+      processingTime: '접수 후 약 2~4주',
+      requiredDocuments: [
+        '사업계획서',
+        '재무제표 (최근 3개년)',
+        '사업자등록증',
+        '법인등기부등본',
+        '기술력 증빙 (벤처확인서, 특허증 등)',
+      ],
+      applicationMethod: '중진공 온라인 신청 (www.kosmes.or.kr)',
+      contactInfo: '중진공 콜센터 1357',
+    },
+
+    riskFactors: [
+      '기술성 평가 탈락 시 지원 불가',
+      '최근 매출 감소 시 심사 불리',
+      '재무제표 정리 필수',
+    ],
+
+    preferentialConditions: [
+      '청년창업기업 금리 0.3%p 우대',
+      '여성기업 금리 우대',
+      '벤처·이노비즈 인증기업 우대',
+    ],
+
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
+
+    meta: {
+      lastUpdated: '2026-01',
+      validFrom: '2025-01-01',
+      confidence: 0.9,
+      notes: '기술력 보유 필수 - 벤처/이노비즈/특허/연구소',
+    },
+  },
+
+  // ========== 신시장진출지원자금 ==========
+  {
+    id: 'kosmes-new-market',
+    institutionId: 'kosmes',
+    track: 'general',
+    name: '신시장진출지원자금',
+    shortName: '신시장진출',
+    type: 'loan',
+    description: '수출, 내수 확대, 신사업 진출 기업 지원',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      employeeCount: {
+        min: 5,
+        description: '상시근로자 5인 이상 중소기업',
+      },
+      businessAge: {
+        min: 1,
+        description: '업력 1년 이상',
+      },
+      revenue: {
+        max: 12000000000,
+        description: '연매출 120억원 이하',
+      },
+      allowedIndustries: ['all'],
+      requiresExport: true,
+      requiredConditions: {
+        hasExportRevenue: true,
+      },
+      additionalRequirements: [
+        '수출실적 보유 또는 수출계획 수립 기업',
+        '신규 사업 진출 계획 보유',
+      ],
+      exclusionConditions: [
+        '휴·폐업 중인 기업',
+        '세금 체납',
+        '금융기관 연체',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 6000000000,
+        unit: '억원',
+        description: '기업당 연간 60억원 이내',
+      },
+      interestRate: {
+        min: 2.0,
+        max: 3.5,
+        type: 'variable',
+        description: '연 2.0~3.5%',
+      },
+      loanPeriod: {
+        years: 5,
+        gracePeriod: 2,
+        description: '5년 (거치 2년)',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 2~4주',
+      applicationMethod: '중진공 온라인 신청',
+    },
+
+    riskFactors: [
+      '수출 실적 증빙 필요',
+      '신사업 계획의 구체성 필요',
+    ],
+
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.85,
+    },
+  },
+
+  // ========== 신성장기반자금 (2026년 신규) ==========
+  {
+    id: 'kosmes-new-growth',
+    institutionId: 'kosmes',
+    track: 'general',
+    name: '신성장기반자금',
+    shortName: '신성장',
+    type: 'loan',
+    description: '성장기 중소기업의 기술혁신, 사업확장 지원 (업력 7년 초과)',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      businessAge: {
+        min: 7,
+        description: '업력 7년 초과 성장기 중소기업',
+      },
+      employeeCount: {
+        min: 5,
+        description: '상시근로자 5인 이상',
+      },
+      allowedIndustries: ['manufacturing', 'it_service', 'other_service'],
+      excludedIndustries: ['부동산업', '유흥업', '금융업'],
+      additionalRequirements: [
+        '성장 가능성 높은 중소기업',
+        '벤처/이노비즈/메인비즈 인증 우대',
+        '신용관리정보 미등록',
+      ],
+      exclusionConditions: [
+        '휴·폐업 중인 기업',
+        '세금 체납 중인 기업',
+        '금융기관 연체 중인 기업',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 6000000000,
+        unit: '억원',
+        description: '기업당 연간 60억원 이내',
+      },
+      interestRate: {
+        min: 2.0,
+        max: 3.5,
+        type: 'variable',
+        description: '정책자금 기준금리 + 가산금리 (연 2.0~3.5%)',
+      },
+      loanPeriod: {
+        years: 5,
+        gracePeriod: 2,
+        description: '5년 이내 (거치 2년 포함)',
+      },
+      repaymentMethod: '거치 후 원금균등분할상환',
+    },
+
+    practicalInfo: {
+      processingTime: '접수 후 약 2~4주',
+      requiredDocuments: [
+        '사업계획서',
+        '재무제표 (최근 3개년)',
+        '사업자등록증',
+        '법인등기부등본',
+      ],
+      applicationMethod: '중진공 온라인 신청 (www.kosmes.or.kr)',
+      contactInfo: '중진공 콜센터 1357',
+    },
+
+    riskFactors: [
+      '재무상태 심사 중요',
+      '성장 가능성 심사 필요',
+    ],
+
+    preferentialConditions: [
+      '벤처/이노비즈/메인비즈 인증기업 금리 우대',
+      '비수도권 기업 금리 0.2%p 우대',
+    ],
+
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
+
+    meta: {
+      lastUpdated: '2026-01',
+      validFrom: '2026-01-01',
+      confidence: 0.9,
+      notes: '2026년 1.3조원 규모, 업력 7년 초과 성장기 기업 대상',
+    },
+  },
+
+  // ========== 긴급경영안정자금 ==========
+  {
+    id: 'kosmes-emergency',
+    institutionId: 'kosmes',
+    track: 'general',
+    name: '긴급경영안정자금',
+    shortName: '긴급경영',
+    type: 'loan',
+    description: '경영 위기 상황의 중소기업 긴급 지원',
+
+    fundingPurpose: { working: true, facility: false },
+
+    eligibility: {
+      employeeCount: {
+        min: 5,
+        description: '상시근로자 5인 이상 중소기업',
+      },
+      requiredConditions: {
+        isEmergencySituation: true,
+      },
+      additionalRequirements: [
+        '재해·재난 피해 기업',
+        '매출 급감 기업 (전년 대비 20% 이상)',
+        '구조조정 기업',
+      ],
+      exclusionConditions: [
+        '휴·폐업',
+        '세금 체납',
+        '금융기관 연체 90일 초과',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 1000000000,
+        unit: '억원',
+        description: '기업당 10억원 이내',
+      },
+      interestRate: {
+        min: 1.5,
+        max: 2.5,
+        type: 'fixed',
+        description: '연 1.5~2.5% (긴급 지원 우대금리)',
+      },
+      loanPeriod: {
+        years: 5,
+        gracePeriod: 2,
+        description: '5년 (거치 2년)',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '긴급 처리 (1~2주)',
+    },
+
+    riskFactors: [
+      '피해 증빙 서류 필수',
+      '매출 감소 객관적 증빙 필요',
+    ],
+
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.8,
+      notes: '재해/재난 시 수시 접수. 긴급상황 증빙 필수.',
+    },
+  },
+
+  // ========== 투융자복합금융 ==========
+  {
+    id: 'kosmes-investment-loan',
+    institutionId: 'kosmes',
+    track: 'policy_linked',
+    name: '투융자복합금융',
+    shortName: '투융자복합',
+    type: 'loan',
+    description: '투자유치 기업에 투자금액 연계 융자 지원',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      employeeCount: {
+        min: 5,
+        description: '상시근로자 5인 이상 중소기업',
+      },
+      businessAge: {
+        min: 2,
+        description: '업력 2년 이상',
+      },
+      revenue: {
+        min: 500000000,
+        description: '연매출 5억원 이상',
+      },
+      additionalRequirements: [
+        '투자금액 대비 일정 비율 융자',
+      ],
+      exclusionConditions: [
+        '휴·폐업',
+        '세금 체납',
+        '금융기관 연체',
+      ],
+    },
+
+    terms: {
+      amount: {
+        min: 1000000000,
+        max: 10000000000,
+        unit: '억원',
+        description: '기업당 10~100억원 (투자금액 연동)',
+      },
+      interestRate: {
+        min: 1.5,
+        max: 2.5,
+        type: 'variable',
+        description: '연 1.5~2.5% (우대금리)',
+      },
+      loanPeriod: {
+        years: 8,
+        gracePeriod: 3,
+        description: '8년 (거치 3년)',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 4~6주 (투자 검증 포함)',
+      requiredDocuments: [
+        '투자계약서',
+        '주주명부',
+        '재무제표',
+        '사업계획서',
+      ],
+    },
+
+    riskFactors: [
+      '투자 검증 필수',
+      '대규모 자금으로 심사 기간 길음',
+    ],
+
+    preferentialConditions: [
+      '시리즈B 이상 투자유치 기업 우대',
+      '기술특례 상장 추진 기업 우대',
+    ],
+
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.85,
+      notes: '스케일업 기업 대상 대형 자금',
+    },
+  },
+
+  // ========== 재창업자금 ==========
+  {
+    id: 'kosmes-restart',
+    institutionId: 'kosmes',
+    track: 'exclusive',
+    name: '재창업자금',
+    shortName: '재창업',
+    type: 'loan',
+    description: '실패 경험 재창업자 사업화 지원',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      employeeCount: {
+        min: 5,
+        description: '상시근로자 5인 이상 중소기업',
+      },
+      businessAge: {
+        max: 7,
+        description: '재창업 7년 이내',
+      },
+      requiredConditions: {
+        isRestart: true,
+      },
+      additionalRequirements: [
+        '과거 폐업 경험 보유',
+        '재창업 사업자',
+        '성실실패 인정 또는 회생절차 완료',
+      ],
+      exclusionConditions: [
+        '악의적 폐업 이력',
+        '금융사기 전력',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 5000000000,
+        unit: '억원',
+        description: '기업당 50억원 이내',
+      },
+      interestRate: {
+        min: 2.0,
+        max: 3.0,
+        type: 'variable',
+        description: '연 2.0~3.0%',
+      },
+      loanPeriod: {
+        years: 5,
+        gracePeriod: 2,
+        description: '5년 (거치 2년)',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 2~3주',
+      requiredDocuments: [
+        '폐업사실증명원',
+        '재창업 사업계획서',
+        '신용회복 증빙',
+      ],
+    },
+
+    riskFactors: [
+      '과거 폐업 사유 심사',
+      '신용등급 제약 있을 수 있음',
+    ],
+
+    preferentialConditions: [
+      '재도전성공패키지 참여기업 우대',
+      '청년 재창업자 금리 우대',
+    ],
+
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.8,
+      notes: '재기 지원 정책',
+    },
+  },
+
+  // ========== 사회적기업전용자금 ==========
+  {
+    id: 'kosmes-social-enterprise',
+    institutionId: 'kosmes',
+    track: 'exclusive',
+    name: '사회적기업전용자금',
+    shortName: '사회적기업',
+    type: 'loan',
+    description: '사회적 가치 실현 기업 전용 - 고용 취약계층 고용·유지 지원',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      requiredConditions: {
+        isSocialEconomyEnterprise: true,
+      },
+      additionalRequirements: [
+        '사회적기업(인증/예비) 또는 사회적협동조합',
+        '또는 자활기업, 마을기업, 장애인표준사업장',
+        '정상 영업 중, 세금 체납 없음',
+        '고용 취약계층 고용·유지 실적',
+      ],
+      exclusionConditions: [
+        '휴·폐업 중인 기업',
+        '세금 체납 중인 기업',
+        '금융기관 연체 중인 기업',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 5000000000,
+        unit: '억원',
+        description: '기업별 수억 원 이내',
+      },
+      interestRate: {
+        min: 1.5,
+        max: 2.5,
+        type: 'variable',
+        description: '정책금리 우대 (연 1.5~2.5%)',
+      },
+      loanPeriod: {
+        years: 8,
+        gracePeriod: 3,
+        description: '8년 (거치 3년)',
+      },
+      repaymentMethod: '거치 후 원금균등분할상환',
+    },
+
+    practicalInfo: {
+      processingTime: '약 2~3주',
+      requiredDocuments: [
+        '사회적기업 인증서 또는 관련 지정서',
+        '사업자등록증',
+        '재무제표',
+        '고용 현황 자료',
+      ],
+      applicationMethod: '중진공 지역본부 접수',
+      contactInfo: '중진공 콜센터 1357',
+    },
+
+    riskFactors: [
+      '사회적 목적 지속 가능성 평가',
+      '고용 유지 실적 확인',
+    ],
+
+    preferentialConditions: [
+      '취약계층 고용 비율 높은 기업 우대',
+      '사회적 가치 성과 우수기업 우대',
+    ],
+
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.85,
+      notes: '사회적경제기업 전용 트랙',
+    },
+  },
+
+  // ========== 스마트공장지원자금 ==========
+  {
+    id: 'kosmes-smart-factory',
+    institutionId: 'kosmes',
+    track: 'policy_linked',
+    name: '스마트공장지원자금',
+    shortName: '스마트공장',
+    type: 'loan',
+    description: '스마트공장 구축·고도화 시설자금 지원',
+
+    fundingPurpose: { working: false, facility: true },
+
+    eligibility: {
+      employeeCount: {
+        min: 5,
+        description: '상시근로자 5인 이상 중소기업',
+      },
+      requiredConditions: {
+        hasSmartFactoryPlan: true,
+      },
+      allowedIndustries: ['manufacturing'],
+      additionalRequirements: [
+        '스마트공장 구축 또는 고도화 계획',
+        '제조업 영위',
+        '스마트공장 보급사업 참여 우대',
+      ],
+      exclusionConditions: [
+        '휴·폐업',
+        '세금 체납',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 6000000000,
+        unit: '억원',
+        description: '기업당 60억원 이내',
+      },
+      interestRate: {
+        min: 1.5,
+        max: 2.5,
+        type: 'variable',
+        description: '연 1.5~2.5% (시설자금 우대)',
+      },
+      loanPeriod: {
+        years: 10,
+        gracePeriod: 4,
+        description: '10년 (거치 4년)',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 3~4주',
+      requiredDocuments: [
+        '스마트공장 구축 계획서',
+        '견적서/투자계획',
+        '재무제표',
+      ],
+    },
+
+    riskFactors: [
+      '시설투자 계획 구체성 필요',
+      '스마트공장 수준 진단 필요',
+    ],
+
+    preferentialConditions: [
+      '스마트공장 보급사업 선정기업 금리 우대',
+      '뿌리산업 기업 우대',
+    ],
+
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.85,
+      notes: '제조업 디지털화 지원',
+    },
+  },
+
+  // ========== 탄소중립시설자금 ==========
+  {
+    id: 'kosmes-green-growth',
+    institutionId: 'kosmes',
+    track: 'policy_linked',
+    name: '탄소중립시설자금',
+    shortName: '탄소중립',
+    type: 'loan',
+    description: 'ESG·탄소중립 관련 시설투자 지원',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      employeeCount: {
+        min: 5,
+        description: '상시근로자 5인 이상 중소기업',
+      },
+      requiredConditions: {
+        hasEsgInvestmentPlan: true,
+      },
+      additionalRequirements: [
+        '탄소저감 시설 투자 계획',
+        'ESG 경영 도입 기업',
+        '환경 관련 인증 보유 우대',
+      ],
+      exclusionConditions: [
+        '환경법 위반 기업',
+        '휴·폐업',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 6000000000,
+        unit: '억원',
+        description: '기업당 60억원 이내',
+      },
+      interestRate: {
+        min: 1.0,
+        max: 2.0,
+        type: 'variable',
+        description: '연 1.0~2.0% (정책 우대금리)',
+      },
+      loanPeriod: {
+        years: 10,
+        gracePeriod: 4,
+        description: '10년 (거치 4년)',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 3~4주',
+      requiredDocuments: [
+        '탄소저감 투자계획서',
+        '환경 인증서 (있는 경우)',
+        '재무제표',
+      ],
+    },
+
+    riskFactors: [
+      '환경 관련 시설투자 입증 필요',
+      '탄소저감 효과 계량화 필요',
+    ],
+
+    preferentialConditions: [
+      'K-ESG 우수기업 금리 우대',
+      '녹색인증 기업 우대',
+    ],
+
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.8,
+      notes: '2050 탄소중립 정책 연계. ESG 투자 계획 필수.',
+    },
+  },
+
+  // ========== 청년전용창업자금 ==========
+  {
+    id: 'kosmes-youth-startup',
+    institutionId: 'kosmes',
+    track: 'exclusive',
+    name: '청년전용창업자금',
+    shortName: '청년창업',
+    type: 'loan',
+    description: '만 39세 이하 청년 대표자의 창업 초기 기업 전용 저금리 융자',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      businessAge: {
+        max: 3,
+        maxWithException: 7,
+        exceptions: [
+          'youth_startup_academy',
+          'global_startup_academy',
+          'kibo_youth_guarantee',
+        ],
+        description: '창업 3년 미만 (예외: 청창사/글로벌창업사관학교 졸업 시 7년)',
+      },
+      revenue: {
+        max: 12000000000,
+        description: '연매출 120억원 이하 중소기업',
+      },
+      allowedIndustries: ['manufacturing', 'it_service', 'other_service'],
+      excludedIndustries: ['부동산임대업', '유흥업', '도박업', '금융업'],
+      preferredOwnerTypes: ['youth'],
+      requiredConditions: {
+        isYouthCompany: true,
+      },
+      additionalRequirements: [
+        '대표자 만 39세 이하',
+        '창업 3년 미만 또는 예비창업자',
+        '(예외) 청년창업사관학교/글로벌창업사관학교 졸업 시 7년까지',
+        '대한민국 내 사업장 소재',
+      ],
+      exclusionConditions: [
+        '휴·폐업 중인 기업',
+        '세금 체납 중인 기업',
+        '최근 5년 내 정책자금 3회 이상 수혜',
+        '동일 대표자 부정수급 이력',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 100000000,
+        unit: '억원',
+        description: '기업당 1억원 이내 (제조업/지역특화산업 2억원)',
+      },
+      interestRate: {
+        min: 2.5,
+        max: 2.5,
+        type: 'fixed',
+        description: '연 2.5% (고정금리)',
+      },
+      loanPeriod: {
+        years: 6,
+        gracePeriod: 3,
+        description: '운전 6년(거치 3년), 시설 10년(거치 3년)',
+      },
+      repaymentMethod: '거치 후 원금균등분할상환',
+    },
+
+    practicalInfo: {
+      processingTime: '선착순 접수, 약 2~3주',
+      requiredDocuments: [
+        '사업계획서',
+        '사업자등록증 또는 창업계획서',
+        '대표자 신분증 (연령 확인)',
+        '재무제표 (있는 경우)',
+      ],
+      applicationMethod: '중진공 지역본부 선착순 접수 (온라인 신청)',
+      contactInfo: '중진공 콜센터 1357',
+    },
+
+    riskFactors: [
+      '선착순 마감으로 접수 시기 중요',
+      '예비창업자는 사업계획서 구체성 필수',
+    ],
+
+    preferentialConditions: [
+      '여성 청년창업자 우대',
+      '제조업/IT/친환경 산업 우대',
+      '기보/신보 보증서 발급 시 가점',
+    ],
+
+    officialUrl: 'https://www.kosmes.or.kr/nsh/SH/SBI/SHSBI004M0.do',
+
+    meta: {
+      lastUpdated: '2026-01',
+      validFrom: '2025-01-01',
+      confidence: 0.95,
+      notes: '청년 대표자 전용 최저금리 정책자금',
+    },
+  },
+];
+
+export default kosmesFunds;

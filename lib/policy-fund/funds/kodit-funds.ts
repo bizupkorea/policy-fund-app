@@ -1,0 +1,1064 @@
+/**
+ * 신보(KODIT) 보증상품 목록
+ *
+ * 신용보증기금 - 담보력 부족 기업에 신용보증 제공
+ * 2026년 기준 총 61조원 규모
+ *
+ * @lastUpdated 2026-01
+ */
+
+import type { PolicyFundKnowledge } from '../knowledge-base';
+
+export type { PolicyFundKnowledge };
+
+/**
+ * 신보(KODIT) 보증상품 프로그램 목록
+ */
+export const koditFunds: PolicyFundKnowledge[] = [
+  // ========== 일반보증 ==========
+  {
+    id: 'kodit-general',
+    institutionId: 'kodit',
+    track: 'guarantee',
+    name: '일반보증',
+    shortName: '신보 일반',
+    type: 'guarantee',
+    description: '담보력 부족 중소기업에 신용보증서 발급',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      creditRating: {
+        max: 6,
+        description: '신용등급 6등급 이상',
+      },
+      allowedIndustries: ['all'],
+      excludedIndustries: ['부동산임대업', '유흥주점업'],
+      exclusionConditions: [
+        '세금 체납',
+        '금융기관 연체',
+        '신용관리정보 등록',
+        '휴·폐업',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 3000000000,
+        unit: '억원',
+        description: '기업당 30억원 이내',
+      },
+      guaranteeRatio: {
+        min: 70,
+        max: 100,
+        description: '보증비율 70~100%',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 1~2주',
+      applicationMethod: '신보 영업점 방문 또는 온라인',
+      contactInfo: '1588-6565',
+    },
+
+    riskFactors: [
+      '신용등급에 따라 보증 한도 차등',
+      '보증료 연 0.5~2.0% 발생',
+    ],
+
+    preferentialConditions: [
+      '청년·여성 기업 보증료 감면',
+      '벤처기업 우대',
+    ],
+
+    officialUrl: 'https://www.kodit.co.kr',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.9,
+    },
+  },
+
+  // ========== 창업기업보증 ==========
+  {
+    id: 'kodit-startup',
+    institutionId: 'kodit',
+    track: 'guarantee',
+    name: '창업기업보증',
+    shortName: '신보 창업',
+    type: 'guarantee',
+    description: '창업 초기 기업 전용 신용보증',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      businessAge: {
+        max: 5,
+        description: '창업 5년 이내',
+      },
+      excludedIndustries: ['부동산임대업', '유흥주점업'],
+    },
+
+    terms: {
+      amount: {
+        max: 500000000,
+        unit: '억원',
+        description: '기업당 5억원 이내',
+      },
+      guaranteeRatio: {
+        min: 85,
+        max: 100,
+        description: '보증비율 85~100% (창업 우대)',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 1주',
+      requiredDocuments: [
+        '사업계획서',
+        '사업자등록증',
+        '대표자 신용정보동의서',
+      ],
+    },
+
+    riskFactors: [
+      '창업 후 실적 부족 시 한도 제한',
+      '대표자 신용등급 중요',
+    ],
+
+    preferentialConditions: [
+      '청년창업자 보증료 0.2%p 감면',
+      '기술창업 우대',
+    ],
+
+    officialUrl: 'https://www.kodit.co.kr/kodit/cm/cntnts/cntntsView.do?mi=3145&cntntsId=11379',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.85,
+    },
+  },
+
+  // ========== 유동화회사보증 ==========
+  {
+    id: 'kodit-securitization',
+    institutionId: 'kodit',
+    track: 'guarantee',
+    name: '유동화회사보증',
+    shortName: '신보 유동화',
+    type: 'guarantee',
+    description: '매출채권 등 자산유동화를 통한 자금조달 지원',
+
+    fundingPurpose: { working: true, facility: false },
+
+    eligibility: {
+      businessAge: {
+        min: 2,
+        description: '업력 2년 이상',
+      },
+      revenue: {
+        min: 1000000000,
+        description: '연매출 10억원 이상',
+      },
+      additionalRequirements: [
+        '매출채권 또는 재고자산 보유',
+        '안정적인 거래처 보유',
+      ],
+      exclusionConditions: [
+        '세금 체납',
+        '금융기관 연체',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 5000000000,
+        unit: '억원',
+        description: '기업당 50억원 이내',
+      },
+      guaranteeRatio: {
+        min: 80,
+        max: 95,
+        description: '보증비율 80~95%',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 2~3주',
+      requiredDocuments: [
+        '매출채권 명세',
+        '거래처 정보',
+        '재무제표',
+      ],
+    },
+
+    riskFactors: [
+      '매출채권 건전성 심사',
+      '거래처 신용도 확인',
+    ],
+
+    preferentialConditions: [
+      '우량 거래처 보유 기업 우대',
+    ],
+
+    officialUrl: 'https://www.kodit.co.kr/kodit/cm/cntnts/cntntsView.do?mi=2806&cntntsId=11379',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.8,
+    },
+  },
+
+  // ========== 혁신성장보증 ==========
+  {
+    id: 'kodit-innovation-growth',
+    institutionId: 'kodit',
+    track: 'policy_linked',
+    name: '혁신성장보증',
+    shortName: '신보 혁신성장',
+    type: 'guarantee',
+    description: '4차산업혁명 관련 혁신기업 전용 보증',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      additionalRequirements: [
+        '4차산업혁명 관련 업종 (AI, 빅데이터, IoT 등)',
+        '혁신성장 분야 영위 기업',
+        '기술혁신형 중소기업',
+      ],
+      excludedIndustries: ['부동산임대업', '유흥주점업'],
+      requiredConditions: {
+        is4thIndustry: true,
+      },
+    },
+
+    terms: {
+      amount: {
+        max: 5000000000,
+        unit: '억원',
+        description: '기업당 50억원 이내',
+      },
+      guaranteeRatio: {
+        min: 85,
+        max: 100,
+        description: '보증비율 85~100%',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 1~2주',
+      requiredDocuments: [
+        '사업계획서',
+        '기술관련 자료',
+        '재무제표',
+      ],
+    },
+
+    riskFactors: [
+      '혁신성장 분야 해당 여부 심사',
+      '기술력 입증 필요',
+    ],
+
+    preferentialConditions: [
+      '혁신성장 유니콘 기업 우대',
+      '특허 보유 기업 보증료 감면',
+    ],
+
+    officialUrl: 'https://www.kodit.co.kr',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.85,
+    },
+  },
+
+  // ========== 일자리창출보증 ==========
+  {
+    id: 'kodit-job-creation',
+    institutionId: 'kodit',
+    track: 'policy_linked',
+    name: '일자리창출보증',
+    shortName: '신보 일자리',
+    type: 'guarantee',
+    description: '고용 확대 기업에 보증 우대 지원',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      additionalRequirements: [
+        '최근 1년 내 고용 증가 기업',
+        '또는 고용 확대 계획 보유',
+        '정규직 채용 우대',
+      ],
+      exclusionConditions: [
+        '고용 감소 기업',
+        '세금 체납',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 3000000000,
+        unit: '억원',
+        description: '기업당 30억원 이내',
+      },
+      guaranteeRatio: {
+        min: 85,
+        max: 100,
+        description: '보증비율 85~100%',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 1~2주',
+      requiredDocuments: [
+        '고용 증가 증빙 (4대보험 가입자 명부)',
+        '채용 계획서',
+        '재무제표',
+      ],
+    },
+
+    riskFactors: [
+      '고용 증가 실적 입증 필요',
+      '일시적 채용은 인정 제한',
+    ],
+
+    preferentialConditions: [
+      '청년 고용 증가 시 보증료 추가 감면',
+      '지역인재 고용 우대',
+    ],
+
+    officialUrl: 'https://www.kodit.co.kr/kodit/cm/cntnts/cntntsView.do?mi=2833&cntntsId=11387',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.85,
+    },
+  },
+
+  // ========== 여성기업우대보증 ==========
+  {
+    id: 'kodit-female',
+    institutionId: 'kodit',
+    track: 'exclusive',
+    name: '여성기업우대보증',
+    shortName: '신보 여성',
+    type: 'guarantee',
+    description: '여성 대표 중소기업 전용 우대 보증',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      preferredOwnerTypes: ['female'],
+      requiredConditions: {
+        isFemale: true,
+      },
+      additionalRequirements: [
+        '여성 대표자 기업',
+        '중소기업 또는 소상공인',
+        '여성기업확인서 보유 우대',
+      ],
+      excludedIndustries: ['부동산임대업', '유흥업'],
+    },
+
+    terms: {
+      amount: {
+        max: 3000000000,
+        unit: '억원',
+        description: '기업당 30억원 이내',
+      },
+      guaranteeRatio: {
+        min: 90,
+        max: 100,
+        description: '보증비율 90~100% (여성기업 우대), 보증료 0.5%p 감면',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 1~2주',
+      requiredDocuments: [
+        '사업자등록증',
+        '재무제표',
+        '여성기업확인서 (있는 경우)',
+        '대표자 신분증',
+      ],
+    },
+
+    riskFactors: ['여성 대표자 요건 확인'],
+
+    preferentialConditions: [
+      '보증비율 100% 가능',
+      '보증료 0.5%p 감면',
+      '여성기업확인서 보유 시 추가 우대',
+    ],
+
+    officialUrl: 'https://www.kodit.co.kr',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.85,
+    },
+  },
+
+  // ========== 수출기업보증 ==========
+  {
+    id: 'kodit-export',
+    institutionId: 'kodit',
+    track: 'policy_linked',
+    name: '수출기업보증',
+    shortName: '신보 수출',
+    type: 'guarantee',
+    description: '수출 실적 또는 수출 계획 기업 전용 보증',
+
+    fundingPurpose: { working: true, facility: false },
+
+    eligibility: {
+      additionalRequirements: [
+        '수출 실적 보유 기업',
+        '또는 수출 계획 수립 기업',
+        '해외 바이어 확보',
+      ],
+      excludedIndustries: ['부동산임대업'],
+      requiredConditions: {
+        hasExportRevenue: true,
+      },
+    },
+
+    terms: {
+      amount: {
+        max: 5000000000,
+        unit: '억원',
+        description: '기업당 50억원 이내',
+      },
+      guaranteeRatio: {
+        min: 85,
+        max: 100,
+        description: '보증비율 85~100%',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 1~2주',
+      requiredDocuments: [
+        '수출실적 증빙 (수출신고필증 등)',
+        '수출계약서 또는 L/C',
+        '재무제표',
+      ],
+    },
+
+    riskFactors: [
+      '수출 실적 또는 계획 검증',
+      '바이어 신용도 확인',
+    ],
+
+    preferentialConditions: [
+      '수출 신규 진출 기업 우대',
+      '강소기업 우대',
+    ],
+
+    officialUrl: 'https://www.kodit.co.kr/kodit/cm/cntnts/cntntsView.do?mi=2834&cntntsId=11388',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.85,
+    },
+  },
+
+  // ========== 청년희망드림보증 ==========
+  {
+    id: 'kodit-youth-dream',
+    institutionId: 'kodit',
+    track: 'exclusive',
+    name: '청년희망드림보증',
+    shortName: '신보 청년드림',
+    type: 'guarantee',
+    description: '17~39세 청년 대표자 창업기업 전용 고보증비율 상품',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      businessAge: {
+        max: 7,
+        description: '창업 7년 이내',
+      },
+      allowedIndustries: ['manufacturing', 'it_service', 'other_service'],
+      excludedIndustries: ['부동산임대업', '유흥주점업'],
+      preferredOwnerTypes: ['youth'],
+      requiredConditions: {
+        isYouthCompany: true,
+      },
+      additionalRequirements: [
+        '대표자 만 17~39세',
+        '창업 7년 이내 기업',
+        '제조업, 유망창업 업종 우대',
+      ],
+      exclusionConditions: [
+        '세금 체납',
+        '금융기관 연체',
+        '신용관리정보 등록',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 300000000,
+        unit: '억원',
+        description: '기업당 3억원 이내',
+      },
+      guaranteeRatio: {
+        min: 95,
+        max: 95,
+        description: '보증비율 95% (고정)',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 1주',
+      requiredDocuments: [
+        '사업자등록증',
+        '대표자 신분증',
+        '재무제표 또는 부가세신고서',
+      ],
+      applicationMethod: '신보 영업점 또는 온라인 (온비즈)',
+      contactInfo: '1588-6565',
+    },
+
+    riskFactors: [
+      '대표자 연령 증빙 필수',
+      '창업 7년 초과 시 일반보증 전환',
+    ],
+
+    preferentialConditions: [
+      '보증료 0.3% 고정 (일반 0.5~2.0%)',
+      '보증비율 95% 고정 (일반 70~100%)',
+    ],
+
+    officialUrl: 'https://www.kodit.co.kr',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.9,
+      notes: '청년 전용 최고 보증비율 상품',
+    },
+  },
+
+  // ========== 청년창업특례보증 ==========
+  {
+    id: 'kodit-youth-startup-special',
+    institutionId: 'kodit',
+    track: 'exclusive',
+    name: '청년창업특례보증',
+    shortName: '신보 청년창업특례',
+    type: 'guarantee',
+    description: '예비창업자 또는 창업 3년 이내 청년 중소기업 특례보증',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      businessAge: {
+        max: 3,
+        description: '예비창업자 또는 창업 3년 이내',
+      },
+      preferredOwnerTypes: ['youth'],
+      requiredConditions: {
+        isYouthCompany: true,
+      },
+      excludedIndustries: ['부동산임대업', '유흥주점업'],
+      additionalRequirements: [
+        '대표자 만 39세 이하',
+        '예비창업자 또는 창업 3년 이내 중소기업',
+      ],
+      exclusionConditions: [
+        '세금 체납',
+        '금융기관 연체',
+        '신용관리정보 등록',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 300000000,
+        unit: '억원',
+        description: '동일 차주 3억원 이내 (운전 1억 + 시설 2억)',
+      },
+      guaranteeRatio: {
+        min: 90,
+        max: 100,
+        description: '보증비율 90~100%',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 1주',
+      requiredDocuments: [
+        '사업계획서',
+        '대표자 신분증',
+        '사업자등록증 (있는 경우)',
+      ],
+      applicationMethod: '신보 영업점 또는 온라인',
+      contactInfo: '1588-6565',
+    },
+
+    riskFactors: [
+      '예비창업자 사업계획서 심사',
+      '창업 3년 초과 시 일반보증 전환',
+    ],
+
+    preferentialConditions: [
+      '예비창업자 지원 가능',
+      '보증료 감면',
+      '고보증비율',
+    ],
+
+    officialUrl: 'https://www.kodit.co.kr',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.85,
+      notes: '예비창업자 포함 청년 특례',
+    },
+  },
+
+  // ============================================================================
+  // 2026년 신규 추가 보증상품
+  // ============================================================================
+
+  // ========== Start-up NEST ==========
+  {
+    id: 'kodit-startup-nest',
+    institutionId: 'kodit',
+    track: 'policy_linked',
+    name: 'Start-up NEST',
+    shortName: '신보 스타트업NEST',
+    type: 'guarantee',
+    description: '혁신스타트업 성장주기별 보증+투자+컨설팅 One-stop 융복합 육성 플랫폼',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      businessAge: {
+        max: 7,
+        description: '창업 7년 이내 혁신스타트업',
+      },
+      additionalRequirements: [
+        '혁신스타트업 (기술기반 창업)',
+        '성장 잠재력 보유',
+        '스케일업 의지',
+      ],
+      requiredConditions: {
+        isVentureCompany: true,
+      },
+      excludedIndustries: ['부동산임대업', '유흥주점업'],
+    },
+
+    terms: {
+      amount: {
+        max: 5000000000,
+        unit: '억원',
+        description: '단계별 최대 50억원',
+      },
+      guaranteeRatio: {
+        min: 85,
+        max: 100,
+        description: '보증비율 85~100%',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 2주',
+      requiredDocuments: [
+        '사업계획서',
+        '재무제표',
+        '벤처기업확인서',
+        '기술사업계획서',
+      ],
+      applicationMethod: '신보 영업점 또는 온라인',
+      contactInfo: '1588-6565',
+    },
+
+    riskFactors: [
+      '성장성 평가 중요',
+      '단계별 지원으로 초기 한도 제한',
+    ],
+
+    preferentialConditions: [
+      '보증+투자+컨설팅 융복합 지원',
+      '전담 조직 밀착 지원',
+      '후속 투자 연계',
+    ],
+
+    officialUrl: 'https://www.kodit.co.kr',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.85,
+      notes: '혁신스타트업 육성 플랫폼',
+    },
+  },
+
+  // ========== 혁신아이콘보증 ==========
+  {
+    id: 'kodit-innovation-icon',
+    institutionId: 'kodit',
+    track: 'policy_linked',
+    name: '혁신아이콘보증',
+    shortName: '신보 혁신아이콘',
+    type: 'guarantee',
+    description: '미래 글로벌 유니콘기업 성장 가능성이 높은 혁신스타트업 집중 육성',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      businessAge: {
+        min: 2,
+        max: 12,
+        description: '업력 2~12년 (공식 확인)',
+      },
+      revenue: {
+        min: 1000000000,
+        description: '매출 10억 이상 + 매출성장률 10% 이상 (또는 투자유치 30억 이상)',
+      },
+      additionalRequirements: [
+        '(조건1) 매출 10억 이상 + 매출성장률 10% 이상 (공식 확인)',
+        '(조건2) 또는 투자유치 30억 이상 (공식 확인)',
+        '유니콘 성장 가능성 높은 혁신스타트업',
+        '글로벌 진출 계획',
+      ],
+      requiredConditions: {
+        isVentureCompany: true,
+      },
+      excludedIndustries: ['부동산임대업', '유흥주점업'],
+    },
+
+    terms: {
+      amount: {
+        max: 20000000000,
+        unit: '억원',
+        description: '최대 200억원 (공식 확인)',
+      },
+      guaranteeRatio: {
+        min: 85,
+        max: 100,
+        description: '보증비율 85~100%',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 3주',
+      requiredDocuments: [
+        '사업계획서',
+        '재무제표',
+        '투자유치 실적 증빙',
+        '글로벌 진출 계획서',
+      ],
+      applicationMethod: '신보 영업점',
+      contactInfo: '1588-6565',
+    },
+
+    riskFactors: [
+      '선정 경쟁 치열',
+      '성장성 입증 필요',
+    ],
+
+    preferentialConditions: [
+      '전담 조직 집중 육성',
+      '스케일업 프로그램 연계',
+      '후속 투자 연계',
+    ],
+
+    officialUrl: 'https://www.kodit.co.kr',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.95,
+      notes: '공식 확인: 업력 2~12년, 매출10억+성장률10% 또는 투자30억+, 한도 200억',
+    },
+  },
+
+  // ========== 혁신리딩기업보증 ==========
+  {
+    id: 'kodit-innovation-leading',
+    institutionId: 'kodit',
+    track: 'policy_linked',
+    name: '혁신리딩기업보증',
+    shortName: '신보 혁신리딩',
+    type: 'guarantee',
+    description: '성장성·혁신성 뛰어난 중소기업을 글로벌 중견기업으로 성장 지원',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      businessAge: {
+        min: 3,
+        description: '업력 3년 이상',
+      },
+      revenue: {
+        min: 3000000000,
+        description: '연매출 30억원 이상',
+      },
+      additionalRequirements: [
+        '성장성·혁신성 뛰어난 중소기업',
+        '글로벌 중견기업 성장 잠재력',
+        '기술력 또는 시장경쟁력 보유',
+      ],
+      excludedIndustries: ['부동산임대업', '유흥주점업'],
+    },
+
+    terms: {
+      amount: {
+        max: 20000000000,
+        unit: '억원',
+        description: '최고보증한도 200억원',
+      },
+      interestRate: {
+        min: 0.5,
+        max: 0.5,
+        type: 'fixed',
+        description: '5년간 최저 보증료율 0.5%',
+      },
+      guaranteeRatio: {
+        min: 85,
+        max: 100,
+        description: '보증비율 85~100%',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 3주',
+      requiredDocuments: [
+        '사업계획서',
+        '재무제표',
+        '성장전략 계획서',
+      ],
+      applicationMethod: '신보 영업점',
+      contactInfo: '1588-6565',
+    },
+
+    riskFactors: [
+      '선정 경쟁 치열',
+      '지속 성장성 입증 필요',
+    ],
+
+    preferentialConditions: [
+      '최고보증한도 200억원',
+      '5년간 최저 보증료율 0.5%',
+      '유동화회사보증 발행금리 우대',
+      'IPO, M&A 등 맞춤형 컨설팅',
+    ],
+
+    officialUrl: 'https://www.kodit.co.kr',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.9,
+      notes: '글로벌 중견기업 성장 지원 프로그램',
+    },
+  },
+
+  // ========== 재도약보증 ==========
+  {
+    id: 'kodit-restart',
+    institutionId: 'kodit',
+    track: 'exclusive',
+    name: '재도약보증',
+    shortName: '신보 재도약',
+    type: 'guarantee',
+    description: '경영위기 극복 또는 재창업 기업 전용 보증',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      additionalRequirements: [
+        '재창업 기업',
+        '또는 경영위기 극복 기업',
+        '사업전환 추진 기업',
+      ],
+      requiredConditions: {
+        isRestart: true,
+      },
+      excludedIndustries: ['부동산임대업', '유흥주점업'],
+    },
+
+    terms: {
+      amount: {
+        max: 500000000,
+        unit: '억원',
+        description: '최대 5억원',
+      },
+      guaranteeRatio: {
+        min: 90,
+        max: 100,
+        description: '보증비율 90~100%',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 2주',
+      requiredDocuments: [
+        '재창업 사업계획서',
+        '폐업사실확인서 (재창업 시)',
+        '신용회복 증빙 (해당 시)',
+      ],
+      applicationMethod: '신보 영업점',
+      contactInfo: '1588-6565',
+    },
+
+    riskFactors: [
+      '재창업 사유 소명 필요',
+      '신용상태 확인',
+    ],
+
+    preferentialConditions: [
+      '재창업자 전용',
+      '보증료 감면',
+      '신용회복자 지원',
+    ],
+
+    officialUrl: 'https://www.kodit.co.kr',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.85,
+      notes: '재창업/경영위기 극복 기업 전용',
+    },
+  },
+
+  // ========== 소셜벤처보증 ==========
+  {
+    id: 'kodit-social-venture',
+    institutionId: 'kodit',
+    track: 'exclusive',
+    name: '소셜벤처보증',
+    shortName: '신보 소셜벤처',
+    type: 'guarantee',
+    description: '사회적가치 창출 기술혁신 기업 및 사회적기업 전용 보증',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      additionalRequirements: [
+        '사회적 가치 창출 목적 기업',
+        '사회적기업 또는 예비사회적기업',
+        '소셜벤처 인증 기업',
+      ],
+      requiredConditions: {
+        isSocialEconomyEnterprise: true,
+      },
+      excludedIndustries: ['부동산임대업', '유흥주점업'],
+    },
+
+    terms: {
+      amount: {
+        max: 1000000000,
+        unit: '억원',
+        description: '최대 10억원',
+      },
+      guaranteeRatio: {
+        min: 90,
+        max: 100,
+        description: '보증비율 90~100%',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 2주',
+      requiredDocuments: [
+        '사업계획서',
+        '사회적기업 인증서',
+        '사회적가치 측정 보고서',
+      ],
+      applicationMethod: '신보 영업점',
+      contactInfo: '1588-6565',
+    },
+
+    riskFactors: [
+      '사회적가치 창출 입증 필요',
+      '인증/확인 서류 필수',
+    ],
+
+    preferentialConditions: [
+      '사회적기업 전용',
+      '보증료 감면',
+      '높은 보증비율',
+    ],
+
+    officialUrl: 'https://www.kodit.co.kr',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.85,
+      notes: '사회적가치 창출 기업 전용',
+    },
+  },
+
+  // ========== 녹색전환보증 ==========
+  {
+    id: 'kodit-green-new-deal',
+    institutionId: 'kodit',
+    track: 'policy_linked',
+    name: '녹색전환보증',
+    shortName: '신보 녹색전환',
+    type: 'guarantee',
+    description: '탄소중립 전환을 위한 녹색 설비 투자 기업 지원',
+
+    fundingPurpose: { working: false, facility: true },
+
+    eligibility: {
+      additionalRequirements: [
+        '탄소중립 전환 투자 계획',
+        '녹색 공정·설비·기술 투자',
+        'ESG 경영 추진 기업',
+      ],
+      requiredConditions: {
+        hasEsgInvestmentPlan: true,
+      },
+      excludedIndustries: ['부동산임대업', '유흥주점업'],
+    },
+
+    terms: {
+      amount: {
+        max: 5000000000,
+        unit: '억원',
+        description: '최대 50억원',
+      },
+      guaranteeRatio: {
+        min: 85,
+        max: 100,
+        description: '보증비율 85~100%',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 2주',
+      requiredDocuments: [
+        '녹색투자 계획서',
+        '설비 투자 견적서',
+        'ESG 경영 계획서',
+      ],
+      applicationMethod: '신보 영업점',
+      contactInfo: '1588-6565',
+    },
+
+    riskFactors: [
+      '녹색투자 계획 구체성 필요',
+      '설비투자 실행력 검증',
+    ],
+
+    preferentialConditions: [
+      '탄소중립 전환 기업 우대',
+      '보증료 감면',
+      'ESG 컨설팅 연계',
+    ],
+
+    officialUrl: 'https://www.kodit.co.kr',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.85,
+      notes: '탄소중립 전환 기업 지원',
+    },
+  },
+];
+
+export default koditFunds;

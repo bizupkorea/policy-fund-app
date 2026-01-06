@@ -701,7 +701,8 @@ export default function TestPage() {
       });
 
       setResults(result.results);
-      setTrackInfo(result.trackInfo || null);
+      // trackInfo는 현재 API에서 반환하지 않으므로 null 유지
+      // setTrackInfo(result.trackInfo || null);
     } catch (error) {
       console.error('매칭 실행 실패:', error);
     } finally {

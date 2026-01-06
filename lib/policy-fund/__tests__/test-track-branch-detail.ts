@@ -4,8 +4,8 @@
  * - 금지 룰 강제 테스트 (청년고용특별자금, 산업기술혁신자금)
  */
 
-import { matchWithKnowledgeBase } from './matching-engine';
-import { POLICY_FUND_KNOWLEDGE_BASE } from './knowledge-base';
+import { matchWithKnowledgeBase } from '../matching-engine';
+import { POLICY_FUND_KNOWLEDGE_BASE } from '../knowledge-base';
 
 // 공통 프로필
 const baseProfile = {

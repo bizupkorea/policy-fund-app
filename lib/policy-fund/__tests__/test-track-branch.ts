@@ -3,7 +3,7 @@
  * A/B/C 3개 케이스 검증
  */
 
-import { matchWithKnowledgeBase } from './matching-engine';
+import { matchWithKnowledgeBase } from '../matching-engine';
 
 // 공통 프로필
 const baseProfile = {

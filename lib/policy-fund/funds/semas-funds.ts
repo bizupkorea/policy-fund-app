@@ -1,0 +1,579 @@
+/**
+ * 소진공(SEMAS) 정책자금 목록
+ *
+ * 소상공인시장진흥공단 - 소상공인 정책자금 융자 전문 기관
+ * 2026년 기준 총 5.4조원 규모
+ *
+ * 주의: 소진공 자금은 대부분 소상공인(5인/10인 미만) 전용
+ * targetScale: ['micro'] 설정으로 하드컷 적용
+ *
+ * @lastUpdated 2026-01
+ */
+
+import type { PolicyFundKnowledge } from '../knowledge-base';
+
+export type { PolicyFundKnowledge };
+
+/**
+ * 소진공(SEMAS) 정책자금 프로그램 목록
+ */
+export const semasFunds: PolicyFundKnowledge[] = [
+  // ========== 소공인특화자금 ==========
+  {
+    id: 'semas-micro-enterprise',
+    institutionId: 'semas',
+    track: 'general',
+    name: '소공인특화자금',
+    targetScale: ['micro'],
+    shortName: '소공인',
+    type: 'loan',
+    description: '상시근로자 10인 미만 제조업체 전용',
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      employeeCount: {
+        max: 10,
+        description: '상시근로자 10인 미만',
+      },
+      allowedIndustries: ['manufacturing'],
+      additionalRequirements: [
+        '제조업 영위',
+        '소공인 해당 업종',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 100000000,
+        unit: '만원',
+        description: '기업당 1억원 이내',
+      },
+      interestRate: {
+        min: 2.0,
+        max: 3.0,
+        type: 'fixed',
+        description: '연 2.0~3.0%',
+      },
+      loanPeriod: {
+        years: 5,
+        gracePeriod: 2,
+        description: '5년 (거치 2년)',
+      },
+    },
+
+    practicalInfo: {
+      applicationMethod: '소진공 지역센터 방문',
+    },
+
+    riskFactors: [
+      '제조업 업종 증빙 필요',
+      '근로자 수 기준 엄격',
+    ],
+
+    officialUrl: 'https://www.semas.or.kr/web/main/index.kmdc',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.85,
+    },
+  },
+
+  // ========== 성장기반자금 ==========
+  {
+    id: 'semas-growth',
+    institutionId: 'semas',
+    track: 'general',
+    name: '성장기반자금',
+    shortName: '성장기반',
+    type: 'loan',
+    description: '성장 단계 소상공인 지원 (소상공인 전용)',
+    targetScale: ['micro'],
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      employeeCount: {
+        max: 10,
+        description: '상시근로자 10인 미만 (제조업 외)',
+      },
+      additionalRequirements: [
+        '소상공인 해당',
+        '성장 가능성 보유',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 100000000,
+        unit: '만원',
+        description: '기업당 1억원 이내',
+      },
+      interestRate: {
+        min: 2.5,
+        max: 3.5,
+        type: 'variable',
+        description: '연 2.5~3.5%',
+      },
+      loanPeriod: {
+        years: 5,
+        gracePeriod: 2,
+        description: '5년 (거치 2년)',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '2~3주',
+      requiredDocuments: [
+        '사업자등록증',
+        '재무제표',
+        '매출 증빙',
+      ],
+    },
+
+    riskFactors: [
+      '소상공인 기준 충족 필수',
+      '매출 기준 확인 필요',
+    ],
+
+    officialUrl: 'https://www.semas.or.kr/web/main/index.kmdc',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.8,
+    },
+  },
+
+  // ========== 긴급경영안정자금 ==========
+  {
+    id: 'semas-emergency',
+    institutionId: 'semas',
+    track: 'general',
+    name: '긴급경영안정자금',
+    shortName: '소진공 긴급',
+    type: 'loan',
+    description: '재해·경영위기 소상공인 긴급 지원 (소상공인 전용)',
+    targetScale: ['micro'],
+
+    fundingPurpose: { working: true, facility: false },
+
+    eligibility: {
+      additionalRequirements: [
+        '재해 피해 소상공인',
+        '경영위기 소상공인',
+      ],
+      requiredConditions: {
+        isEmergencySituation: true,
+      },
+    },
+
+    terms: {
+      amount: {
+        max: 50000000,
+        unit: '만원',
+        description: '기업당 5천만원 이내',
+      },
+      interestRate: {
+        min: 1.5,
+        max: 2.0,
+        type: 'fixed',
+        description: '연 1.5~2.0% (긴급 우대)',
+      },
+      loanPeriod: {
+        years: 5,
+        gracePeriod: 2,
+        description: '5년 (거치 2년)',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '긴급 처리 (1주 이내)',
+    },
+
+    riskFactors: [
+      '피해 증빙 필수',
+      '지원 한도 제한적',
+    ],
+
+    officialUrl: 'https://www.semas.or.kr/web/main/index.kmdc',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.8,
+      notes: '재해 시 수시 접수',
+    },
+  },
+
+  // ========== 일반경영안정자금 ==========
+  {
+    id: 'semas-general',
+    institutionId: 'semas',
+    track: 'general',
+    name: '일반경영안정자금',
+    shortName: '소진공 일반',
+    type: 'loan',
+    description: '일반 소상공인 운전자금 지원 (소상공인 전용)',
+    targetScale: ['micro'],
+
+    fundingPurpose: { working: true, facility: false },
+
+    eligibility: {
+      employeeCount: {
+        max: 5,
+        description: '상시근로자 5인 미만 (제조업 10인 미만)',
+      },
+      allowedIndustries: ['wholesale_retail', 'food_service', 'other_service'],
+      additionalRequirements: [
+        '소상공인 해당',
+        '사업자등록 후 6개월 이상',
+      ],
+      exclusionConditions: [
+        '휴·폐업',
+        '세금 체납',
+        '유흥업종',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 70000000,
+        unit: '만원',
+        description: '기업당 7천만원 이내',
+      },
+      interestRate: {
+        min: 2.5,
+        max: 3.5,
+        type: 'fixed',
+        description: '연 2.5~3.5%',
+      },
+      loanPeriod: {
+        years: 5,
+        gracePeriod: 2,
+        description: '5년 (거치 2년)',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 2주',
+      requiredDocuments: [
+        '사업자등록증',
+        '매출 증빙',
+        '신분증',
+      ],
+      applicationMethod: '소진공 지역센터 또는 온라인',
+    },
+
+    riskFactors: [
+      '소상공인 기준 충족 필수',
+      '업종별 지원 제외 확인',
+    ],
+
+    officialUrl: 'https://www.semas.or.kr/web/board/webBoardList.kmdc?bCd=policy_fund',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.9,
+    },
+  },
+
+  // ========== 여성기업지원자금 ==========
+  {
+    id: 'semas-female',
+    institutionId: 'semas',
+    track: 'exclusive',
+    name: '여성기업지원자금',
+    shortName: '여성기업',
+    type: 'loan',
+    description: '여성 대표 소상공인 전용 지원 (소상공인 전용)',
+    targetScale: ['micro'],
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      employeeCount: {
+        max: 5,
+        description: '상시근로자 5인 미만 (제조업 10인 미만)',
+      },
+      preferredOwnerTypes: ['female'],
+      requiredConditions: {
+        isFemale: true,
+      },
+      additionalRequirements: [
+        '여성 대표자 기업',
+        '소상공인 해당',
+        '여성기업확인서 보유 우대',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 70000000,
+        unit: '만원',
+        description: '기업당 7천만원 이내',
+      },
+      interestRate: {
+        min: 2.0,
+        max: 3.0,
+        type: 'fixed',
+        description: '연 2.0~3.0% (우대금리)',
+      },
+      loanPeriod: {
+        years: 5,
+        gracePeriod: 2,
+        description: '5년 (거치 2년)',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 2주',
+      requiredDocuments: [
+        '사업자등록증',
+        '여성기업확인서 (있는 경우)',
+        '매출 증빙',
+      ],
+    },
+
+    riskFactors: ['여성 대표자 요건 확인'],
+
+    preferentialConditions: [
+      '여성기업확인서 보유 시 금리 우대',
+      '보증료 감면',
+    ],
+
+    officialUrl: 'https://www.semas.or.kr/web/board/webBoardList.kmdc?bCd=policy_fund',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.9,
+    },
+  },
+
+  // ========== 장애인기업지원자금 ==========
+  {
+    id: 'semas-disabled',
+    institutionId: 'semas',
+    track: 'exclusive',
+    name: '장애인기업지원자금',
+    shortName: '장애인기업',
+    type: 'loan',
+    description: '장애인 대표 기업 또는 장애인표준사업장 전용 지원',
+    // 장애인표준사업장은 중소기업도 가능하므로 targetScale 제한 없음
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      preferredOwnerTypes: ['disabled'],
+      requiredConditions: {
+        isDisabledCompany: true,
+      },
+      additionalRequirements: [
+        '장애인 대표자 기업 또는 장애인표준사업장',
+        '장애인복지법에 따른 장애인',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 100000000,
+        unit: '만원',
+        description: '기업당 1억원 이내',
+      },
+      interestRate: {
+        min: 2.0,
+        max: 2.5,
+        type: 'fixed',
+        description: '연 2.0~2.5% (우대금리)',
+      },
+      loanPeriod: {
+        years: 5,
+        gracePeriod: 2,
+        description: '5년 (거치 2년)',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 2주',
+      requiredDocuments: [
+        '장애인등록증',
+        '사업자등록증',
+        '매출 증빙',
+      ],
+    },
+
+    riskFactors: [
+      '장애인 대표자 요건 확인',
+    ],
+
+    preferentialConditions: [
+      '보증료 감면',
+      '우대금리 적용',
+    ],
+
+    officialUrl: 'https://www.semas.or.kr/web/board/webBoardList.kmdc?bCd=policy_fund',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.85,
+    },
+  },
+
+  // ========== 청년고용특별자금 ==========
+  {
+    id: 'semas-youth',
+    institutionId: 'semas',
+    track: 'exclusive',
+    name: '청년고용특별자금',
+    shortName: '청년소상공인',
+    type: 'loan',
+    description: '청년 소상공인 또는 청년 고용 소상공인 지원 (소상공인 전용)',
+    targetScale: ['micro'],
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      preferredOwnerTypes: ['youth'],
+      requiredConditions: {
+        isYouthCompany: true,
+      },
+      additionalRequirements: [
+        '만 39세 이하 청년 대표자',
+        '또는 청년 정규직 고용 소상공인',
+        '소상공인 해당',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 100000000,
+        unit: '만원',
+        description: '기업당 1억원 이내',
+      },
+      interestRate: {
+        min: 2.0,
+        max: 3.0,
+        type: 'fixed',
+        description: '연 2.0~3.0% (우대금리)',
+      },
+      loanPeriod: {
+        years: 5,
+        gracePeriod: 2,
+        description: '5년 (거치 2년)',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 2주',
+      requiredDocuments: [
+        '대표자 신분증 (연령 확인)',
+        '사업자등록증',
+        '청년 고용 증빙 (해당 시)',
+      ],
+    },
+
+    riskFactors: [
+      '청년 기준 연령 확인',
+      '고용 실적 검증 (청년고용 우대 시)',
+    ],
+
+    preferentialConditions: [
+      '청년창업 우대금리',
+      '보증료 감면',
+    ],
+
+    officialUrl: 'https://www.semas.or.kr/web/board/webBoardList.kmdc?bCd=policy_fund',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.85,
+    },
+  },
+
+  // ========== 청년고용연계자금 ==========
+  {
+    id: 'semas-youth-employment',
+    institutionId: 'semas',
+    track: 'exclusive',
+    name: '청년고용연계자금',
+    shortName: '청년고용연계',
+    type: 'loan',
+    description: '청년 소상공인 또는 청년 고용 소상공인 전용 자금 (소상공인 전용)',
+    targetScale: ['micro'],
+
+    fundingPurpose: { working: true, facility: true },
+
+    eligibility: {
+      businessAge: {
+        max: 3,
+        description: '사업 유지기간 3년 미만 청년 소상공인',
+      },
+      employeeCount: {
+        max: 10,
+        description: '상시근로자 10인 미만 (제조업 외 5인 미만)',
+      },
+      preferredOwnerTypes: ['youth'],
+      requiredConditions: {
+        hasYouthEmploymentPlan: true,
+      },
+      additionalRequirements: [
+        '만 39세 이하 청년 대표자',
+        '또는 상시근로자 과반수가 청년',
+        '또는 최근 1년 내 청년 근로자 1명 이상 고용',
+      ],
+      exclusionConditions: [
+        '휴·폐업',
+        '세금 체납',
+        '유흥업종',
+      ],
+    },
+
+    terms: {
+      amount: {
+        max: 100000000,
+        unit: '만원',
+        description: '기업당 1억원 이내',
+      },
+      interestRate: {
+        min: 2.0,
+        max: 3.0,
+        type: 'fixed',
+        description: '연 2.0~3.0% (청년 우대금리)',
+      },
+      loanPeriod: {
+        years: 5,
+        gracePeriod: 2,
+        description: '5년 (거치 2년)',
+      },
+    },
+
+    practicalInfo: {
+      processingTime: '약 2주',
+      requiredDocuments: [
+        '대표자 신분증 (연령 확인)',
+        '사업자등록증',
+        '4대보험 가입자 명부 (청년고용 증빙)',
+      ],
+      applicationMethod: '소진공 지역센터 또는 온라인',
+      contactInfo: '1357',
+    },
+
+    riskFactors: [
+      '청년 기준 연령 확인 필수',
+      '청년 고용 실적 검증',
+    ],
+
+    preferentialConditions: [
+      '청년 대표자 우대금리',
+      '청년 고용 증가 시 추가 우대',
+    ],
+
+    officialUrl: 'https://www.semas.or.kr/web/board/webBoardList.kmdc?bCd=policy_fund',
+
+    meta: {
+      lastUpdated: '2026-01',
+      confidence: 0.85,
+      notes: '청년 고용 창출 연계 정책',
+    },
+  },
+];
+
+export default semasFunds;
