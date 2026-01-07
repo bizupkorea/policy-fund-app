@@ -3,6 +3,39 @@
  */
 
 // ============================================================================
+// 조건 체크 결과 타입 (공통)
+// ============================================================================
+
+/** 기본 조건 체크 상태 */
+export type CheckStatus = 'pass' | 'fail' | 'warning';
+
+/** 확장 조건 체크 상태 (eligibility-checker용) */
+export type ExtendedCheckStatus = CheckStatus | 'bonus' | 'unknown';
+
+/** 기본 조건 체크 결과 (validation-utils용) */
+export interface BaseCheckResult {
+  condition: string;
+  status: CheckStatus;
+  description: string;
+  impact: number; // 점수 영향 (-30 ~ +30)
+}
+
+/** 확장 조건 체크 결과 (eligibility-checker용) */
+export interface ExtendedCheckResult {
+  condition: string;
+  status: ExtendedCheckStatus;
+  description: string;
+  impact: number; // 점수 영향 (-50 ~ +20)
+}
+
+/** 상세 매칭용 체크 결과 (matching-engine용) */
+export interface DetailedCheckResult {
+  passed: boolean;
+  failed: boolean;
+  reason: string;
+}
+
+// ============================================================================
 // PDF에서 추출된 기업 정보
 // ============================================================================
 

@@ -12,17 +12,15 @@ import {
   BusinessAgeException,
 } from './knowledge-base';
 
+import { BaseCheckResult } from './types';
+
 // ============================================================================
 // 타입 정의
 // ============================================================================
 
-/** 개별 조건 체크 결과 */
-export interface CheckResult {
-  condition: string;
-  status: 'pass' | 'fail' | 'warning';
-  description: string;
-  impact: number; // 점수 영향 (-30 ~ +30)
-}
+/** 개별 조건 체크 결과 - types.ts의 BaseCheckResult를 사용 */
+export type CheckResult = BaseCheckResult;
+
 
 /** 업력 기준 */
 export interface BusinessAgeCriteria {

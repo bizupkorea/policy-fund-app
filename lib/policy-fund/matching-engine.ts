@@ -9,6 +9,7 @@
  */
 
 import { PolicyFundProgram, CompanyPolicyProfile } from '@/lib/types/policy-fund';
+import { DetailedCheckResult } from './types';
 
 export type MatchLevel = 'high' | 'medium' | 'low';
 
@@ -813,11 +814,9 @@ export function calculateDetailedMatchScore(
 // 조건별 체크 함수
 // ============================================================================
 
-interface CheckResult {
-  passed: boolean;
-  failed: boolean;
-  reason: string;
-}
+// CheckResult를 DetailedCheckResult로 대체 (types.ts에서 import)
+type CheckResult = DetailedCheckResult;
+
 
 /**
  * 업력 조건 체크

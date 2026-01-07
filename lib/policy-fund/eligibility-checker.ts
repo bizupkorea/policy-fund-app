@@ -28,6 +28,8 @@ import {
   getExceptionLabel,
 } from './validation-utils';
 
+import { ExtendedCheckResult } from './types';
+
 // ============================================================================
 // 타입 정의
 // ============================================================================
@@ -105,13 +107,9 @@ export interface EligibilityResult {
   recommendation: string;
 }
 
-/** 개별 조건 체크 결과 */
-export interface CheckResult {
-  condition: string;
-  status: 'pass' | 'fail' | 'warning' | 'bonus' | 'unknown';
-  description: string;
-  impact: number; // 점수 영향 (-50 ~ +20)
-}
+/** 개별 조건 체크 결과 - types.ts의 ExtendedCheckResult 사용 */
+export type CheckResult = ExtendedCheckResult;
+
 
 // ============================================================================
 // 자격 체크 함수
