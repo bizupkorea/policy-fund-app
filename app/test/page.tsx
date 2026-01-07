@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { Play, RotateCcw, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react';
-import { matchWithKnowledgeBase, ExtendedCompanyProfile, DetailedMatchResult } from '@/lib/policy-fund/matching-engine';
+import { matchWithKnowledgeBase, ExtendedCompanyProfile, DetailedMatchResult } from '@/lib/policy-fund/last';
 
 // ============================================================================
 // 타입 정의
