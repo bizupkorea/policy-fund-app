@@ -151,7 +151,8 @@ export const semasFunds: PolicyFundKnowledge[] = [
     name: '장애인기업지원자금',
     shortName: '장애인기업',
     type: 'loan',
-    description: '장애인 대표 기업 또는 장애인표준사업장 전용 지원',
+    description: '장애인 대표 기업 또는 장애인표준사업장 전용 지원 (소상공인 전용)',
+    targetScale: ['micro'],
     fundingPurpose: { working: true, facility: true },
     eligibility: {
       preferredOwnerTypes: ['disabled'],

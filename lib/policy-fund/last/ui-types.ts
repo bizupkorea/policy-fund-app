@@ -59,21 +59,26 @@ export interface TestProfile {
   isDisabled: boolean;
   isDisabledStandard: boolean; // 장애인표준사업장
   isSocialEnterprise: boolean; // 사회적기업 인증
-  isPreSocialEnterprise: boolean; // 예비사회적기업
-  isSocialCooperative: boolean; // 사회적협동조합
-  isSelfSupportEnterprise: boolean; // 자활기업
-  isVillageEnterprise: boolean; // 마을기업
 
-  // 제약 조건
-  hasTaxDelinquency: boolean;
+  // 제약 조건 (하드컷)
+  isInactive: boolean;                    // 휴·폐업
+  hasTaxDelinquency: boolean;             // 세금 체납
+  hasTaxInstallmentApproval: boolean;     // 세금 분납 승인 (체납 시)
+  isCurrentlyDelinquent: boolean;         // 금융기관 연체 중
+  hasUnresolvedGuaranteeAccident: boolean; // 보증사고 미정리
+  hasPastDefault: boolean;                // 과거 부실/사고 이력
+  isPastDefaultResolved: boolean;         // 과거 부실 정리 완료
+  isCreditRecoveryInProgress: boolean;    // 신용회복 중
+
+  // 기타 제약 조건
   existingLoanBalance: number; // 억원
   isRestart: boolean; // 재창업 여부
 
   // 정책자금 이용 이력
   kosmesPreviousCount: number;  // 중진공 누적 이용 횟수 (졸업제 체크)
+  hasRecentKosmesLoan: boolean; // 최근 2년 내 중진공 이용 여부
   currentGuaranteeOrg: GuaranteeOrg;  // 현재 이용 중인 보증기관
   recentYearSubsidyAmount: number;  // 최근 1년 정책자금 수혜액 (억원)
-  hasPastDefault: boolean;  // 과거 부실/사고 이력
 
   // 업력 예외 조건 (청년전용창업자금 업력 7년 확대)
   isYouthStartupAcademyGrad: boolean; // 청년창업사관학교 졸업
@@ -84,6 +89,8 @@ export interface TestProfile {
   hasSmartFactoryPlan: boolean;     // 스마트공장 구축/고도화 계획
   hasEsgInvestmentPlan: boolean;    // ESG/탄소중립 시설투자 계획
   isEmergencySituation: boolean;    // 경영위기/긴급상황
+  hasJobCreation: boolean;          // 최근 1년 고용 증가 실적
+  isGreenEnergyBusiness: boolean;   // 신재생에너지 사업
 
   // 성장 전략 및 투자 계획
   hasIpoOrInvestmentPlan: boolean;  // IPO/투자유치 계획
@@ -130,23 +137,28 @@ export const EMPTY_PROFILE: TestProfile = {
   isDisabled: false,
   isDisabledStandard: false,
   isSocialEnterprise: false,
-  isPreSocialEnterprise: false,
-  isSocialCooperative: false,
-  isSelfSupportEnterprise: false,
-  isVillageEnterprise: false,
+  isInactive: false,
   hasTaxDelinquency: false,
+  hasTaxInstallmentApproval: false,
+  isCurrentlyDelinquent: false,
+  hasUnresolvedGuaranteeAccident: false,
+  hasPastDefault: false,
+  isPastDefaultResolved: false,
+  isCreditRecoveryInProgress: false,
   existingLoanBalance: 0,
   isRestart: false,
   kosmesPreviousCount: 0,
+  hasRecentKosmesLoan: false,
   currentGuaranteeOrg: 'none',
   recentYearSubsidyAmount: 0,
-  hasPastDefault: false,
   isYouthStartupAcademyGrad: false,
   isGlobalStartupAcademyGrad: false,
   hasKiboYouthGuarantee: false,
   hasSmartFactoryPlan: false,
   hasEsgInvestmentPlan: false,
   isEmergencySituation: false,
+  hasJobCreation: false,
+  isGreenEnergyBusiness: false,
   hasIpoOrInvestmentPlan: false,
   hasVentureInvestment: false,
   acceptsEquityDilution: false,

@@ -237,72 +237,97 @@ export function checkFundEligibility(
   // 청년 전용 자금인지 확인 (자금명에 '청년' 포함)
   const isYouthOnlyFund = fund.name.includes('청년') || fund.id.includes('youth');
 
-  // ★★★ requiredConditions 체크 (v4 - 전체 조건 추가) ★★★
+  // ★★★ requiredConditions 체크 (v5 - 하드컷) ★★★
+  // 전용자금 필수 요건 미충족 시 해당 자금 완전 제외
   if (criteria.requiredConditions) {
     const reqCond = criteria.requiredConditions;
+    const exclusionReasons: CheckResult[] = [];
 
-    // === 대표자 특성 ===
+    // === 대표자 특성 (하드컷) ===
     if (reqCond.isYouthCompany === true && !profile.ownerCharacteristics?.includes('youth')) {
-      failedConditions.push({ condition: '청년 대표자 필수', status: 'fail', description: '청년 전용 자금: 만 39세 이하만', impact: -50 });
+      exclusionReasons.push({ condition: '청년 대표자 필수', status: 'fail', description: '청년 전용 자금: 만 39세 이하만 신청 가능', impact: -100 });
     }
     if (reqCond.isFemale === true && !profile.ownerCharacteristics?.includes('female')) {
-      failedConditions.push({ condition: '여성 대표자 필수', status: 'fail', description: '여성 전용 자금: 여성 대표자만', impact: -50 });
+      exclusionReasons.push({ condition: '여성 대표자 필수', status: 'fail', description: '여성 전용 자금: 여성 대표자만 신청 가능', impact: -100 });
     }
     if (reqCond.isDisabled === true && !profile.ownerCharacteristics?.includes('disabled')) {
-      failedConditions.push({ condition: '장애인 대표자 필수', status: 'fail', description: '장애인 전용 자금: 장애인만', impact: -50 });
+      exclusionReasons.push({ condition: '장애인 대표자 필수', status: 'fail', description: '장애인 전용 자금: 장애인만 신청 가능', impact: -100 });
     }
     if (reqCond.isDisabledCompany === true && !profile.ownerCharacteristics?.includes('disabled')) {
-      failedConditions.push({ condition: '장애인기업 필수', status: 'fail', description: '장애인기업 전용 자금', impact: -50 });
+      exclusionReasons.push({ condition: '장애인기업 필수', status: 'fail', description: '장애인기업 전용 자금: 장애인기업만 신청 가능', impact: -100 });
     }
     if (reqCond.isDisabledStandard === true && !profile.ownerCharacteristics?.includes('disabled')) {
-      failedConditions.push({ condition: '장애인표준사업장 필수', status: 'fail', description: '장애인표준사업장 전용 자금', impact: -50 });
+      exclusionReasons.push({ condition: '장애인표준사업장 필수', status: 'fail', description: '장애인표준사업장 전용 자금', impact: -100 });
     }
 
-    // === 인증/자격 ===
+    // === 인증/자격 (하드컷) ===
     if (reqCond.isVentureCompany === true && !profile.certifications?.includes('venture')) {
-      failedConditions.push({ condition: '벤처기업 인증 필수', status: 'fail', description: '벤처기업 전용 자금: 벤처 인증 필요', impact: -50 });
+      exclusionReasons.push({ condition: '벤처기업 인증 필수', status: 'fail', description: '벤처기업 전용 자금: 벤처 인증 필요', impact: -100 });
     }
     if (reqCond.isInnobiz === true && !profile.certifications?.includes('innobiz')) {
-      failedConditions.push({ condition: '이노비즈 인증 필수', status: 'fail', description: '이노비즈 전용 자금: 이노비즈 인증 필요', impact: -50 });
+      exclusionReasons.push({ condition: '이노비즈 인증 필수', status: 'fail', description: '이노비즈 전용 자금: 이노비즈 인증 필요', impact: -100 });
     }
     if (reqCond.isSocialEnterprise === true && !(profile as any).isSocialEnterprise) {
-      failedConditions.push({ condition: '사회적기업 인증 필수', status: 'fail', description: '사회적기업 전용 자금', impact: -50 });
+      exclusionReasons.push({ condition: '사회적기업 인증 필수', status: 'fail', description: '사회적기업 전용 자금: 사회적기업 인증 필요', impact: -100 });
     }
     if (reqCond.isSocialEconomyEnterprise === true && !(profile as any).isSocialEnterprise) {
-      failedConditions.push({ condition: '사회적경제기업 필수', status: 'fail', description: '사회적경제기업 전용 자금', impact: -50 });
+      exclusionReasons.push({ condition: '사회적경제기업 필수', status: 'fail', description: '사회적경제기업 전용 자금', impact: -100 });
     }
 
-    // === 기술/특허 ===
+    // === 기술/특허 (하드컷) ===
     if (reqCond.hasPatent === true && !profile.hasTechAssets) {
-      failedConditions.push({ condition: '특허 보유 필수', status: 'fail', description: 'IP 담보 자금: 특허/실용신안 필요', impact: -50 });
+      exclusionReasons.push({ condition: '특허 보유 필수', status: 'fail', description: 'IP 담보 자금: 특허/실용신안 필요', impact: -100 });
     }
     if (reqCond.hasRndActivity === true && !profile.hasTechAssets) {
-      failedConditions.push({ condition: 'R&D 필수', status: 'fail', description: '기술/R&D 자금: 기술 근거 필요', impact: -50 });
+      exclusionReasons.push({ condition: 'R&D 필수', status: 'fail', description: '기술/R&D 자금: R&D 활동 또는 기술성 필요', impact: -100 });
     }
     if (reqCond.hasResearchInstitute === true && !profile.hasTechAssets) {
-      failedConditions.push({ condition: '기업부설연구소 필수', status: 'fail', description: '연구소 보유 기업 전용', impact: -50 });
+      exclusionReasons.push({ condition: '기업부설연구소 필수', status: 'fail', description: '연구소 보유 기업 전용', impact: -100 });
     }
     if (reqCond.hasTechnologyCertification === true && !profile.hasTechAssets) {
-      failedConditions.push({ condition: '기술인증 필수', status: 'fail', description: '기술인증 보유 기업 전용', impact: -50 });
+      exclusionReasons.push({ condition: '기술인증 필수', status: 'fail', description: '기술인증 보유 기업 전용', impact: -100 });
     }
 
-    // === 수출/해외 ===
+    // === 수출/해외 (하드컷) ===
     if (reqCond.hasExportRevenue === true && !profile.hasExportExperience) {
-      failedConditions.push({ condition: '수출 실적 필수', status: 'fail', description: '수출 자금: 수출 실적 필요', impact: -50 });
+      exclusionReasons.push({ condition: '수출 실적 필수', status: 'fail', description: '수출 자금: 수출 실적 또는 계약 필요', impact: -100 });
     }
 
-    // === 특수 목적 ===
+    // === 특수 목적 (하드컷) ===
     if (reqCond.hasSmartFactoryPlan === true && !(profile as any).hasSmartFactoryPlan) {
-      failedConditions.push({ condition: '스마트공장 계획 필수', status: 'fail', description: '스마트공장 구축/고도화 계획 필요', impact: -50 });
+      exclusionReasons.push({ condition: '스마트공장 계획 필수', status: 'fail', description: '스마트공장 구축/고도화 계획 필요', impact: -100 });
     }
     if (reqCond.hasEsgInvestmentPlan === true && !(profile as any).hasEsgInvestmentPlan) {
-      failedConditions.push({ condition: 'ESG 투자계획 필수', status: 'fail', description: 'ESG/탄소중립 투자 계획 필요', impact: -50 });
+      exclusionReasons.push({ condition: 'ESG 투자계획 필수', status: 'fail', description: 'ESG/탄소중립 투자 계획 필요', impact: -100 });
     }
     if (reqCond.isEmergencySituation === true && !profile.isEmergencySituation) {
-      failedConditions.push({ condition: '긴급경영 상황 필수', status: 'fail', description: '긴급경영안정자금: 경영위기 상황 필요', impact: -50 });
+      exclusionReasons.push({ condition: '긴급경영 상황 필수', status: 'fail', description: '긴급경영안정자금: 경영위기 상황 필요', impact: -100 });
     }
     if (reqCond.hasYouthEmploymentPlan === true && !(profile as any).hasYouthEmploymentPlan) {
-      failedConditions.push({ condition: '청년고용 계획 필수', status: 'fail', description: '청년고용 계획 또는 청년 근로자 보유 필요', impact: -50 });
+      exclusionReasons.push({ condition: '청년고용 계획 필수', status: 'fail', description: '청년고용 계획 또는 청년 근로자 보유 필요', impact: -100 });
+    }
+    if (reqCond.isGreenEnergyBusiness === true && !(profile as any).isGreenEnergyBusiness) {
+      exclusionReasons.push({ condition: '신재생에너지 사업 필수', status: 'fail', description: '신재생에너지 발전 기업 전용', impact: -100 });
+    }
+    if (reqCond.hasJobCreation === true && !(profile as any).hasJobCreation) {
+      exclusionReasons.push({ condition: '고용창출 실적 필수', status: 'fail', description: '최근 1년 내 고용 증가 기업 전용', impact: -100 });
+    }
+
+    // 하드컷: 전용자금 요건 미충족 시 즉시 불합격 반환
+    if (exclusionReasons.length > 0) {
+      return {
+        fundId: fund.id,
+        fundName: fund.name,
+        institutionId: fund.institutionId,
+        isEligible: false,
+        eligibilityScore: 0,
+        passedConditions: [],
+        failedConditions: exclusionReasons,
+        warningConditions: [],
+        bonusConditions: [],
+        summary: `신청 불가 (${exclusionReasons.map(r => r.condition).join(', ')})`,
+        recommendation: '전용자금 필수 요건을 충족하지 않아 신청이 불가합니다.',
+      };
     }
   }
 
@@ -325,7 +350,7 @@ export function checkFundEligibility(
   const additionalBonuses = checkAdditionalBonuses(profile, fund);
   bonusConditions.push(...additionalBonuses);
 
-  // ========== 4단계: 재창업자금 체크 ==========
+  // ========== 4단계: 재창업자금 체크 (하드컷) ==========
   const isRestartOnlyFund = fund.id === 'kosmes-restart' || fund.name.includes('재창업') || fund.name.includes('재도약');
 
   if (isRestartOnlyFund) {
@@ -337,12 +362,25 @@ export function checkFundEligibility(
         impact: 30,
       });
     } else {
-      failedConditions.push({
-        condition: '재창업 기업',
-        status: 'fail',
-        description: '재창업자금은 재창업 기업만 신청 가능 (과거 폐업 후 재창업 필요)',
-        impact: -50,
-      });
+      // 하드컷: 재창업자금은 재창업 기업만 신청 가능
+      return {
+        fundId: fund.id,
+        fundName: fund.name,
+        institutionId: fund.institutionId,
+        isEligible: false,
+        eligibilityScore: 0,
+        passedConditions: [],
+        failedConditions: [{
+          condition: '재창업 기업 필수',
+          status: 'fail',
+          description: '재창업자금은 재창업 기업만 신청 가능 (과거 폐업 후 재창업 필요)',
+          impact: -100,
+        }],
+        warningConditions: [],
+        bonusConditions: [],
+        summary: '신청 불가 (재창업 기업 필수)',
+        recommendation: '재창업자금은 과거 폐업 후 재창업한 기업만 신청 가능합니다.',
+      };
     }
   } else {
     if (profile.isRestart) {

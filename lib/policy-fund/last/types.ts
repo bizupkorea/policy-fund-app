@@ -217,6 +217,7 @@ export interface ExtendedCompanyProfile extends CompanyPolicyProfile {
     environmentInvestment?: boolean;
   };
   kosmesPreviousCount?: number;
+  hasRecentKosmesLoan?: boolean;  // 최근 2년 내 중진공 이용 여부
   currentGuaranteeOrg?: 'none' | 'kodit' | 'kibo' | 'both';
   existingLoanBalance?: number;
   recentYearSubsidyAmount?: number;
@@ -232,6 +233,18 @@ export interface ExtendedCompanyProfile extends CompanyPolicyProfile {
   isEmergencySituation?: boolean;
   debtRatio?: number;
   hasPatent?: boolean;
+  hasJobCreation?: boolean;
+  isGreenEnergyBusiness?: boolean;
+
+  // 제약 조건 (하드컷)
+  isInactive?: boolean;                      // 휴·폐업
+  isCurrentlyDelinquent?: boolean;           // 금융 연체 (현재 진행 중)
+  hasUnresolvedGuaranteeAccident?: boolean;  // 보증사고 미정리
+  isPastDefaultResolved?: boolean;           // 과거 부실 정리 완료 여부
+
+  // 제약 조건 (조건부 - conditional)
+  hasTaxInstallmentApproval?: boolean;       // 세금 분납 승인 여부
+  isCreditRecoveryInProgress?: boolean;      // 신용회복 중
 }
 
 /** eligibility-checker용 기업 프로필 */
@@ -344,6 +357,8 @@ export interface EligibilityCriteria {
     isDisabledCompany?: boolean;
     isSocialEconomyEnterprise?: boolean;
     hasYouthEmploymentPlan?: boolean;
+    isGreenEnergyBusiness?: boolean;
+    hasJobCreation?: boolean;
   };
 }
 

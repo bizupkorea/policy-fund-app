@@ -87,6 +87,7 @@ export default function TestPage() {
         industryName: INDUSTRY_OPTIONS.find(i => i.value === profile.industry)?.label || '제조업',
         region: profile.location,
         hasTaxDelinquency: profile.hasTaxDelinquency,
+        taxDelinquencyStatus: profile.hasTaxDelinquency ? 'active' : 'none',
         hasPreviousSupport: false,
         isYouthCompany: profile.ceoAge <= 39,
         hasExistingLoan: profile.existingLoanBalance > 0,
@@ -110,11 +111,21 @@ export default function TestPage() {
         currentGuaranteeOrg: profile.currentGuaranteeOrg,
         existingLoanBalance: profile.existingLoanBalance,
         recentYearSubsidyAmount: profile.recentYearSubsidyAmount,
+        // 하드컷 조건
         hasPastDefault: profile.hasPastDefault,
+        isPastDefaultResolved: profile.isPastDefaultResolved,
+        isInactive: profile.isInactive,
+        isCurrentlyDelinquent: profile.isCurrentlyDelinquent,
+        hasUnresolvedGuaranteeAccident: profile.hasUnresolvedGuaranteeAccident,
+        // 조건부(Conditional) 조건
+        hasTaxInstallmentApproval: profile.hasTaxInstallmentApproval,
+        isCreditRecoveryInProgress: profile.isCreditRecoveryInProgress,
         // 특수 자금 계획
         hasSmartFactoryPlan: profile.hasSmartFactoryPlan,
         hasEsgInvestmentPlan: profile.hasEsgInvestmentPlan,
         isEmergencySituation: profile.isEmergencySituation,
+        hasJobCreation: profile.hasJobCreation,
+        isGreenEnergyBusiness: profile.isGreenEnergyBusiness,
         // 여성기업 여부
         isFemale: profile.isFemale,
         // 재창업 여부
@@ -349,10 +360,6 @@ export default function TestPage() {
                   { key: 'isFemale', label: '여성기업 인증' },
                   { key: 'isDisabledStandard', label: '장애인표준사업장' },
                   { key: 'isSocialEnterprise', label: '사회적기업 인증' },
-                  { key: 'isPreSocialEnterprise', label: '예비사회적기업' },
-                  { key: 'isSocialCooperative', label: '사회적협동조합' },
-                  { key: 'isSelfSupportEnterprise', label: '자활기업' },
-                  { key: 'isVillageEnterprise', label: '마을기업' },
                 ].map(cert => (
                   <label key={cert.key} className="flex items-center gap-2 cursor-pointer">
                     <input
@@ -578,7 +585,7 @@ export default function TestPage() {
                         <p className="text-xs text-green-500">친환경 시설투자</p>
                       </div>
                     </label>
-                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded border border-red-200 hover:bg-red-50 transition-colors col-span-2">
+                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded border border-red-200 hover:bg-red-50 transition-colors">
                       <input
                         type="checkbox"
                         checked={profile.isEmergencySituation}
@@ -588,6 +595,30 @@ export default function TestPage() {
                       <div>
                         <span className="text-sm font-medium text-gray-700">긴급경영안정</span>
                         <p className="text-xs text-red-500">재해/경영위기 상황</p>
+                      </div>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded border border-blue-200 hover:bg-blue-50 transition-colors">
+                      <input
+                        type="checkbox"
+                        checked={profile.hasJobCreation}
+                        onChange={e => updateProfile('hasJobCreation', e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">고용증가</span>
+                        <p className="text-xs text-blue-500">최근 1년 내 고용 증가</p>
+                      </div>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer p-2 rounded border border-yellow-200 hover:bg-yellow-50 transition-colors col-span-2">
+                      <input
+                        type="checkbox"
+                        checked={profile.isGreenEnergyBusiness}
+                        onChange={e => updateProfile('isGreenEnergyBusiness', e.target.checked)}
+                        className="w-4 h-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">신재생에너지</span>
+                        <p className="text-xs text-yellow-600">태양광/풍력/수소 등 사업</p>
                       </div>
                     </label>
                   </div>
@@ -602,18 +633,58 @@ export default function TestPage() {
                 제약 조건
               </h3>
               <div className="space-y-4">
+                {/* 세금 체납 */}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={profile.hasTaxDelinquency}
+                      onChange={e => {
+                        updateProfile('hasTaxDelinquency', e.target.checked);
+                        if (!e.target.checked) {
+                          updateProfile('hasTaxInstallmentApproval', false);
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
+                    />
+                    <span className="text-sm text-gray-700">세금 체납 있음</span>
+                    {profile.hasTaxDelinquency && !profile.hasTaxInstallmentApproval && (
+                      <span className="text-xs text-red-500 font-medium">⚠️ 하드컷 - 자금 불가</span>
+                    )}
+                  </label>
+                  {profile.hasTaxDelinquency && (
+                    <div className="ml-6 space-y-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={profile.hasTaxInstallmentApproval}
+                          onChange={e => updateProfile('hasTaxInstallmentApproval', e.target.checked)}
+                          className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
+                        />
+                        <span className="text-sm text-gray-700">분납 승인</span>
+                      </label>
+                      {profile.hasTaxInstallmentApproval ? (
+                        <p className="text-xs text-orange-600">⚠️ 심사 시 불이익 가능 (감점 -10)</p>
+                      ) : (
+                        <p className="text-xs text-red-500">⚠️ 분납 미승인 시 정책자금 신청 불가</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+                {/* 신용회복 중 */}
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={profile.hasTaxDelinquency}
-                    onChange={e => updateProfile('hasTaxDelinquency', e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
+                    checked={profile.isCreditRecoveryInProgress}
+                    onChange={e => updateProfile('isCreditRecoveryInProgress', e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
                   />
-                  <span className="text-sm text-gray-700">세금 체납 있음</span>
-                  {profile.hasTaxDelinquency && (
-                    <span className="text-xs text-red-500 font-medium">⚠️ 대부분 자금 불가</span>
+                  <span className="text-sm text-gray-700">신용회복 중</span>
+                  {profile.isCreditRecoveryInProgress && (
+                    <span className="text-xs text-red-500 font-medium">🚫 정책자금 제외 (재도전자금 예외)</span>
                   )}
                 </label>
+                {/* 재창업 기업 */}
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -746,19 +817,42 @@ export default function TestPage() {
                   )}
                 </div>
                 {/* 부실/사고 이력 */}
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={profile.hasPastDefault}
-                    onChange={e => updateProfile('hasPastDefault', e.target.checked)}
-                    className="w-4 h-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
-                  />
-                  <span className="text-sm text-gray-700">과거 부실/사고 이력</span>
-                  <span className="text-xs text-gray-500">(보증사고, 대출연체 등)</span>
-                </label>
-                {profile.hasPastDefault && (
-                  <p className="text-xs text-orange-500 ml-6">⚠️ 일반자금 감점, 재창업/재기자금은 우대</p>
-                )}
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={profile.hasPastDefault}
+                      onChange={e => {
+                        updateProfile('hasPastDefault', e.target.checked);
+                        if (!e.target.checked) {
+                          updateProfile('isPastDefaultResolved', false);
+                        }
+                      }}
+                      className="w-4 h-4 rounded border-gray-300 text-red-500 focus:ring-red-500"
+                    />
+                    <span className="text-sm text-gray-700">과거 부실/사고 이력</span>
+                    <span className="text-xs text-gray-500">(보증사고, 대출연체 등)</span>
+                  </label>
+                  {profile.hasPastDefault && (
+                    <div className="ml-6 space-y-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={profile.isPastDefaultResolved}
+                          onChange={e => updateProfile('isPastDefaultResolved', e.target.checked)}
+                          className="w-4 h-4 rounded border-gray-300 text-green-500 focus:ring-green-500"
+                        />
+                        <span className="text-sm text-gray-700">정리 완료</span>
+                        <span className="text-xs text-gray-500">(채무 상환/면책 등)</span>
+                      </label>
+                      {profile.isPastDefaultResolved ? (
+                        <p className="text-xs text-green-600">✓ 재창업/재기자금 우대 적용</p>
+                      ) : (
+                        <p className="text-xs text-red-500">⚠️ 미정리 시 정책자금 신청 불가 (하드컷)</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
