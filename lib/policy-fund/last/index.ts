@@ -61,6 +61,36 @@ export {
 } from './knowledge-base';
 
 // ============================================================================
+// UI 상수 export
+// ============================================================================
+
+export {
+  INDUSTRY_OPTIONS,
+  REGION_OPTIONS,
+  INSTITUTION_COLORS,
+  INSTITUTION_NAMES,
+} from './constants';
+
+export type { IndustryOption, InstitutionColorStyle } from './constants';
+
+// ============================================================================
+// UI 타입 및 프리셋 export
+// ============================================================================
+
+export {
+  EMPTY_PROFILE,
+} from './ui-types';
+
+export type {
+  IndustryType,
+  GuaranteeOrg,
+  TestProfile,
+  PresetScenario,
+} from './ui-types';
+
+export { PRESET_SCENARIOS } from './presets';
+
+// ============================================================================
 // 타입 export
 // ============================================================================
 
