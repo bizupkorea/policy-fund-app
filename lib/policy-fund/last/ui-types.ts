@@ -39,6 +39,8 @@ export interface TestProfile {
   industry: IndustryType;
   location: string;
   establishedYear: number;
+  establishedMonth: number;
+  establishedDay: number;
 
   // 재무 정보
   annualRevenue: number; // 억원
@@ -123,6 +125,8 @@ export const EMPTY_PROFILE: TestProfile = {
   industry: 'manufacturing_general',
   location: '서울',
   establishedYear: new Date().getFullYear(),
+  establishedMonth: 1,
+  establishedDay: 1,
   annualRevenue: 0,
   employeeCount: 0,
   debtRatio: 0,

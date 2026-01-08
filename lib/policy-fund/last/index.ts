@@ -91,6 +91,61 @@ export type {
 export { PRESET_SCENARIOS } from './presets';
 
 // ============================================================================
+// Step UI 상수 export (신규)
+// ============================================================================
+
+export {
+  STEP_INFO,
+  STEP_LABELS,
+  TOTAL_STEPS,
+  FUNDING_STEPS,
+  FUNDING_PURPOSE_OPTIONS,
+  LARGE_FUNDING_THRESHOLD,
+  LOCATIONS,
+  CAPITAL_REGIONS,
+  isCapitalRegion,
+  INDUSTRY_LABEL_MAP,
+  PREFERRED_INDUSTRIES,
+  isPreferredIndustry,
+} from './constants/index';
+
+export type {
+  StepInfo,
+  FundingStep,
+  FundingPurposeOption,
+  LocationType,
+  IndustryOption as IndustryOptionNew,
+} from './constants/index';
+
+// ============================================================================
+// Step UI 컴포넌트 export (신규)
+// ============================================================================
+
+export {
+  StepIndicator,
+  StepHeader,
+  Accordion,
+  StepNavButtons,
+  ResultCard,
+  SelectField,
+  DateInputField,
+  NumericField,
+  ToggleButtonGroup,
+} from './components';
+
+// ============================================================================
+// Step UI 훅 export (신규)
+// ============================================================================
+
+export {
+  useStepForm,
+  useStepNav,
+  useBusinessCalc,
+} from './hooks';
+
+export type { BusinessAge, CompanySize } from './hooks';
+
+// ============================================================================
 // 타입 export
 // ============================================================================
 
