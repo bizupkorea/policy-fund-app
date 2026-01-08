@@ -51,6 +51,7 @@ export interface TestProfile {
   isVenture: boolean;
   isInnobiz: boolean;
   isMainbiz: boolean;
+  hasIsoCertification: boolean;
   hasPatent: boolean;
   hasResearchInstitute: boolean;
   hasExportRecord: boolean;
@@ -133,6 +134,7 @@ export const EMPTY_PROFILE: TestProfile = {
   isVenture: false,
   isInnobiz: false,
   isMainbiz: false,
+  hasIsoCertification: false,
   hasPatent: false,
   hasResearchInstitute: false,
   hasExportRecord: false,

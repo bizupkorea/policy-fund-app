@@ -24,7 +24,7 @@ export function Step2FundingNeeds({
 }: Step2FundingNeedsProps) {
   // 슬라이더 인덱스 계산
   const initialIndex = FUNDING_STEPS.findIndex((s) => s.value === profile.requiredFundingAmount);
-  const [fundingStepIndex, setFundingStepIndex] = useState(initialIndex >= 0 ? initialIndex : 2);
+  const [fundingStepIndex, setFundingStepIndex] = useState(initialIndex >= 0 ? initialIndex : 1);
   const [isStep2SubExpanded, setIsStep2SubExpanded] = useState(false);
 
   // 현재 자금 용도 계산
@@ -72,16 +72,19 @@ export function Step2FundingNeeds({
                          [&::-webkit-slider-thumb]:transition-all [&::-webkit-slider-thumb]:hover:scale-110"
             />
             <div className="flex justify-between mt-2 text-xs text-slate-400 font-medium">
-              <span>1억 미만</span>
+              <span>1억</span>
+              <span>2억</span>
               <span>3억</span>
+              <span>4억</span>
               <span>5억</span>
-              <span>10억+</span>
+              <span>10억</span>
+              <span>20억+</span>
             </div>
           </div>
 
           {/* 현재 선택 피드백 */}
-          <div className="bg-white rounded-xl p-4 border-2 border-orange-400 text-center shadow-sm">
-            <div className="flex items-center justify-center gap-2 mb-1">
+          <div className="bg-white rounded-xl py-2 px-4 border-2 border-orange-400 text-center shadow-sm">
+            <div className="flex items-center justify-center gap-2">
               <span className="text-3xl font-bold text-orange-600">
                 {FUNDING_STEPS[fundingStepIndex].label}
               </span>
@@ -91,7 +94,6 @@ export function Step2FundingNeeds({
                 </span>
               )}
             </div>
-            <p className="text-sm text-slate-600">{FUNDING_STEPS[fundingStepIndex].desc}</p>
           </div>
         </div>
 
@@ -166,12 +168,11 @@ export function Step2FundingNeeds({
               <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
                 <span>📈</span> 투자/성장 계획
               </h4>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                 {[
                   { key: 'hasIpoOrInvestmentPlan', label: 'IPO/투자 유치' },
                   { key: 'hasVentureInvestment', label: '벤처투자 실적' },
                   { key: 'acceptsEquityDilution', label: '지분희석 감수' },
-                  { key: 'needsLargeFunding', label: '대규모 (5억+)' },
                 ].map((item) => (
                   <label
                     key={item.key}
@@ -200,13 +201,11 @@ export function Step2FundingNeeds({
                   { key: 'hasEsgInvestmentPlan', label: 'ESG/탄소중립' },
                   { key: 'isEmergencySituation', label: '긴급경영' },
                   { key: 'hasJobCreation', label: '고용증가' },
-                  { key: 'isGreenEnergyBusiness', label: '신재생에너지', colSpan: true },
+                  { key: 'isGreenEnergyBusiness', label: '신재생에너지' },
                 ].map((item) => (
                   <label
                     key={item.key}
-                    className={`flex items-center gap-2 cursor-pointer p-2.5 rounded-lg border border-slate-200 bg-white hover:border-orange-300 transition-all ${
-                      item.colSpan ? 'md:col-span-2' : ''
-                    }`}
+                    className="flex items-center gap-2 cursor-pointer p-2.5 rounded-lg border border-slate-200 bg-white hover:border-orange-300 transition-all"
                   >
                     <input
                       type="checkbox"

@@ -389,25 +389,67 @@ export async function matchWithKnowledgeBase(
     });
   }
 
-  // 감점 로직: 용도 불일치
-  if (profile.requestedFundingPurpose && profile.requestedFundingPurpose !== 'both') {
+  // ============================================================================
+  // 가중치 기반 자금용도 매칭 로직
+  // ============================================================================
+  // 운전자금/시설자금/혼합 선택에 따라 차등 점수 적용
+  // - 운전자금 선택 + 운전자금 전용 펀드: +10점
+  // - 운전자금 선택 + 시설자금 전용 펀드: -25점 (강한 제한)
+  // - 시설자금 선택 + 시설자금 전용 펀드: +20점 (시설자금은 더 중요)
+  // - 시설자금 선택 + 운전자금 전용 펀드: -25점 (강한 제한)
+  // - 혼합 선택 + 시설+운전 모두 가능: +15점
+  // - 혼합 선택 + 시설자금 전용: +5점
+  // - 혼합 선택 + 운전자금 전용: 0점 (기본)
+  // ============================================================================
+  if (profile.requestedFundingPurpose) {
     resultsWithBonus.forEach(r => {
       const fund = POLICY_FUND_KNOWLEDGE_BASE.find(f => f.id === r.fundId);
       if (fund) {
         const requested = profile.requestedFundingPurpose;
         const supportsWorking = fund.fundingPurpose.working;
         const supportsFacility = fund.fundingPurpose.facility;
+        const supportsBoth = supportsWorking && supportsFacility;
 
-        if (requested === 'working' && !supportsWorking && supportsFacility) {
-          r.score = Math.max(0, r.score - 15);
-          r.warnings.push('용도 불일치 (운전자금 필요, 시설자금 전용)');
-          r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
+        if (requested === 'working') {
+          // 운전자금 선택
+          if (supportsWorking && !supportsFacility) {
+            // 운전자금 전용 펀드: +10점
+            r.score = Math.min(100, r.score + 10);
+            r.eligibilityReasons.push('운전자금 전용 - 용도 일치');
+          } else if (!supportsWorking && supportsFacility) {
+            // 시설자금 전용 펀드: -25점 (강한 제한)
+            r.score = Math.max(0, r.score - 25);
+            r.warnings.push('용도 불일치 (운전자금 필요, 시설자금 전용)');
+          }
+          // 혼합 지원 펀드: 0점 (기본)
+        } else if (requested === 'facility') {
+          // 시설자금 선택
+          if (supportsFacility && !supportsWorking) {
+            // 시설자금 전용 펀드: +20점 (시설자금은 더 중요)
+            r.score = Math.min(100, r.score + 20);
+            r.eligibilityReasons.push('시설자금 전용 - 용도 일치');
+          } else if (!supportsFacility && supportsWorking) {
+            // 운전자금 전용 펀드: -25점 (강한 제한)
+            r.score = Math.max(0, r.score - 25);
+            r.warnings.push('용도 불일치 (시설자금 필요, 운전자금 전용)');
+          }
+          // 혼합 지원 펀드: 0점 (기본)
+        } else if (requested === 'both') {
+          // 혼합자금 선택
+          if (supportsBoth) {
+            // 시설+운전 모두 가능: +15점
+            r.score = Math.min(100, r.score + 15);
+            r.eligibilityReasons.push('시설자금+운전자금 모두 지원 가능');
+          } else if (supportsFacility && !supportsWorking) {
+            // 시설자금 전용: +5점 (시설자금이라도 있으면 가점)
+            r.score = Math.min(100, r.score + 5);
+            r.eligibilityReasons.push('시설자금 지원 가능');
+          }
+          // 운전자금 전용: 0점 (기본)
         }
-        if (requested === 'facility' && !supportsFacility && supportsWorking) {
-          r.score = Math.max(0, r.score - 15);
-          r.warnings.push('용도 불일치 (시설자금 필요, 운전자금 전용)');
-          r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
-        }
+
+        // 레벨 재계산
+        r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
       }
     });
   }
@@ -431,8 +473,8 @@ export async function matchWithKnowledgeBase(
                           r.fundName.includes('소상공인');
 
       if (isInnovationFund) {
-        r.score = Math.min(100, r.score + 15);
-        r.eligibilityReasons.push('벤처투자 유치 실적 보유 - 혁신성장/스케일업 자금 적합');
+        r.score = Math.min(100, r.score + 20);
+        r.eligibilityReasons.push('벤처투자 유치 실적 보유 - 혁신성장/스케일업 자금 최우선');
         r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
       } else if (isMicroFund) {
         r.score = Math.max(0, r.score - 25);
@@ -483,35 +525,75 @@ export async function matchWithKnowledgeBase(
   // 긴급경영안정 체크 → 긴급경영안정자금 우선
   // ============================================================================
 
-  // 스마트공장 계획 체크 시 → 스마트공장 자금 우선
+  // 스마트공장 계획 체크 시 → 스마트공장 자금 우선 (제조업 검증 포함)
   if (profile.hasSmartFactoryPlan) {
     const smartFactoryFundIds = ['kosmes-smart-factory'];
     const smartFactoryKeywords = ['스마트공장', '스마트팩토리'];
+
+    // 제조업 여부 확인 (KSIC C코드: 10~34)
+    const industryCode = profile.industryCode || '';
+    const isManufacturing = industryCode.startsWith('C') ||
+                            (parseInt(industryCode.substring(0, 2)) >= 10 && parseInt(industryCode.substring(0, 2)) <= 34);
 
     resultsWithBonus.forEach(r => {
       const isSmartFactoryFund = smartFactoryFundIds.includes(r.fundId) ||
                                   smartFactoryKeywords.some(kw => r.fundName.includes(kw));
 
       if (isSmartFactoryFund) {
-        r.score = Math.min(100, r.score + 25);
-        r.eligibilityReasons.push('스마트공장 구축/고도화 계획 - 스마트공장자금 최우선 추천');
+        if (isManufacturing) {
+          r.score = Math.min(100, r.score + 25);
+          r.eligibilityReasons.push('스마트공장 구축/고도화 계획 (제조업) - 스마트공장자금 최우선 추천');
+        } else {
+          // 비제조업: 가점 축소 + 경고
+          r.score = Math.min(100, r.score + 10);
+          r.warnings.push('스마트공장자금은 제조업 우선 - 비제조업은 심사 제한 가능');
+          r.eligibilityReasons.push('스마트공장 구축 계획 (비제조업 주의)');
+        }
         r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
       }
     });
   }
 
-  // ESG/탄소중립 투자 계획 체크 시 → 녹색전환/탄소중립 자금 우선
-  if (profile.hasEsgInvestmentPlan) {
+  // ESG/탄소중립 + 신재생에너지 통합 처리 (Ceiling 로직 적용)
+  // 둘 다 체크 시 합산 최대 +35점 제한
+  const hasEsg = profile.hasEsgInvestmentPlan;
+  const hasGreenEnergy = profile.isGreenEnergyBusiness;
+  const esgGreenEnergyCeiling = 35; // 중복 체크 시 최대 가점
+
+  if (hasEsg || hasGreenEnergy) {
     const esgFundIds = ['kosmes-carbon-neutral', 'kodit-green-new-deal', 'kibo-green-transition'];
     const esgKeywords = ['녹색전환', '탄소중립', 'ESG', '친환경'];
+    const greenEnergyFundIds = ['kibo-green-energy'];
+    const greenEnergyKeywords = ['신재생', '태양광', '풍력', '수소', '에너지'];
 
     resultsWithBonus.forEach(r => {
       const isEsgFund = esgFundIds.includes(r.fundId) ||
                         esgKeywords.some(kw => r.fundName.includes(kw));
+      const isGreenEnergyFund = greenEnergyFundIds.includes(r.fundId) ||
+                                 greenEnergyKeywords.some(kw => r.fundName.includes(kw));
 
-      if (isEsgFund) {
-        r.score = Math.min(100, r.score + 25);
-        r.eligibilityReasons.push('ESG/탄소중립 시설투자 계획 - 녹색전환자금 최우선 추천');
+      let greenBonus = 0;
+      const reasons: string[] = [];
+
+      if (hasEsg && isEsgFund) {
+        greenBonus += 25;
+        reasons.push('ESG/탄소중립 시설투자 계획');
+      }
+      if (hasGreenEnergy && isGreenEnergyFund) {
+        greenBonus += 25;
+        reasons.push('신재생에너지 사업');
+      }
+
+      // Ceiling 적용: 둘 다 해당 시 최대 35점
+      if (greenBonus > 0) {
+        const appliedBonus = Math.min(greenBonus, esgGreenEnergyCeiling);
+        r.score = Math.min(100, r.score + appliedBonus);
+
+        if (greenBonus > esgGreenEnergyCeiling) {
+          r.eligibilityReasons.push(`${reasons.join(' + ')} - 녹색/신재생 자금 최우선 (가점 ${appliedBonus}점, Ceiling 적용)`);
+        } else {
+          r.eligibilityReasons.push(`${reasons.join(' + ')} - 녹색/신재생 자금 최우선 추천`);
+        }
         r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
       }
     });
@@ -546,23 +628,6 @@ export async function matchWithKnowledgeBase(
       if (isJobCreationFund) {
         r.score = Math.min(100, r.score + 25);
         r.eligibilityReasons.push('고용증가 실적 보유 - 일자리창출자금 최우선 추천');
-        r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
-      }
-    });
-  }
-
-  // 신재생에너지 사업 체크 시 → 신재생에너지 관련 자금 우선
-  if (profile.isGreenEnergyBusiness) {
-    const greenEnergyFundIds = ['kibo-green-energy'];
-    const greenEnergyKeywords = ['신재생', '태양광', '풍력', '수소', '에너지'];
-
-    resultsWithBonus.forEach(r => {
-      const isGreenEnergyFund = greenEnergyFundIds.includes(r.fundId) ||
-                                 greenEnergyKeywords.some(kw => r.fundName.includes(kw));
-
-      if (isGreenEnergyFund) {
-        r.score = Math.min(100, r.score + 25);
-        r.eligibilityReasons.push('신재생에너지 사업 - 신재생에너지보증 최우선 추천');
         r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
       }
     });

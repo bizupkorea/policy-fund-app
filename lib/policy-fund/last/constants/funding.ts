@@ -11,14 +11,13 @@ export interface FundingStep {
 }
 
 export const FUNDING_STEPS: FundingStep[] = [
-  { value: 0.5, label: '1억 미만', desc: '소규모 운전자금' },
-  { value: 1, label: '1억', desc: '창업/소규모 자금' },
+  { value: 1, label: '1억', desc: '소규모 운전자금' },
   { value: 2, label: '2억', desc: '일반 운전자금' },
-  { value: 3, label: '3억', desc: '중규모 사업자금' },
+  { value: 3, label: '3억', desc: '중소규모 자금' },
+  { value: 4, label: '4억', desc: '중규모 자금' },
   { value: 5, label: '5억', desc: '시설투자 포함' },
-  { value: 7, label: '7억', desc: '중규모 시설자금' },
   { value: 10, label: '10억', desc: '대규모 시설투자' },
-  { value: 15, label: '10억+', desc: '대규모 복합자금' },
+  { value: 20, label: '20억+', desc: '대규모 복합자금' },
 ];
 
 export interface FundingPurposeOption {

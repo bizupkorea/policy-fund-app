@@ -90,6 +90,7 @@ export function Step3Conditions({
                 { key: 'isVenture', label: '벤처기업' },
                 { key: 'isInnobiz', label: '이노비즈' },
                 { key: 'isMainbiz', label: '메인비즈' },
+                { key: 'hasIsoCertification', label: 'ISO인증' },
               ].map((cert) => (
                 <ToggleButton
                   key={cert.key}
