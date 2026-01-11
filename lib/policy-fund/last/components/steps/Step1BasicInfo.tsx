@@ -73,12 +73,23 @@ export function Step1BasicInfo({
 
           {/* 설립일 */}
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">
-              설립일{' '}
-              <span className="text-orange-500 font-semibold">
-                (업력: {businessAge.years}년 {businessAge.months}개월)
-              </span>
-            </label>
+            <div className="flex items-center gap-3 mb-1">
+              <label className="text-xs font-medium text-slate-600">
+                설립일{' '}
+                <span className="text-orange-500 font-semibold">
+                  (업력: {businessAge.years}년 {businessAge.months}개월)
+                </span>
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer px-2 py-0.5 rounded-md border border-slate-200 hover:border-orange-300 transition-all">
+                <input
+                  type="checkbox"
+                  checked={profile.isRestart}
+                  onChange={(e) => updateProfile('isRestart', e.target.checked)}
+                  className="w-3.5 h-3.5 rounded border-slate-300 text-orange-500 focus:ring-orange-500"
+                />
+                <span className="text-xs text-slate-600">재창업</span>
+              </label>
+            </div>
             <div className="flex items-center gap-2">
               <select
                 value={profile.establishedYear}

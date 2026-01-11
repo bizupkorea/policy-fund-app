@@ -175,6 +175,17 @@ export type {
 
   // 상세 매칭 결과
   DetailedMatchResult,
+  EnhancedMatchResult,
+
+  // 고도화된 적격 사유 타입 (3사 통합)
+  SafetyZone,
+  ImpactLevel,
+  ReasonCategory,
+  EligibilityReasonItem,
+  DetailedEligibilityReason,
+  AIJudgment,
+  SafetyZoneResult,
+  SafetyThresholds,
 
   // 기업 프로필
   CompanyPolicyProfile,
@@ -196,3 +207,30 @@ export type {
   SupportTerms,
   FundingPurpose,
 } from './types';
+
+// ============================================================================
+// 고도화된 적격 사유 상수 export (3사 통합)
+// ============================================================================
+
+export {
+  REASON_CATEGORY_LABELS,
+  REASON_CATEGORY_ICONS,
+  SAFETY_ZONE_DISPLAY,
+  IMPACT_LEVEL_DISPLAY,
+  DEFAULT_SAFETY_THRESHOLDS,
+} from './types';
+
+// ============================================================================
+// 고도화된 적격 사유 생성 함수 export
+// ============================================================================
+
+export {
+  generateDetailedReasons,
+  generateBasicConditions,
+  generateBonusConditions,
+  generateStrategicConditions,
+  generateFundingConditions,
+  generateAIJudgment,
+  calculateSafetyZone,
+  calculateBusinessAgeSafetyZone,
+} from './eligibility';

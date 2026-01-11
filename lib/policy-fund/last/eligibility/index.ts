@@ -70,6 +70,18 @@ export {
 
 export type { Suggestion } from './suggestions';
 
+// 고도화된 적격 사유 생성 (3사 통합)
+export {
+  calculateSafetyZone,
+  calculateBusinessAgeSafetyZone,
+  generateBasicConditions,
+  generateBonusConditions,
+  generateStrategicConditions,
+  generateFundingConditions,
+  generateAIJudgment,
+  generateDetailedReasons,
+} from './reason-generator';
+
 // ============================================================================
 // 메인 자격 체크 함수
 // ============================================================================

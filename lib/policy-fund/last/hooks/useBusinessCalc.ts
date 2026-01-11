@@ -53,7 +53,7 @@ export function useBusinessCalc(profile: TestProfile) {
     if (profile.isMainbiz) count++;
     if (profile.hasPatent) count++;
     if (profile.hasResearchInstitute) count++;
-    if (profile.hasExportRecord) count++;
+    if (profile.exportRevenue > 0) count++;
     if (profile.isDisabledStandard) count++;
     if (profile.isSocialEnterprise) count++;
     return count;
@@ -63,7 +63,7 @@ export function useBusinessCalc(profile: TestProfile) {
     profile.isMainbiz,
     profile.hasPatent,
     profile.hasResearchInstitute,
-    profile.hasExportRecord,
+    profile.exportRevenue,
     profile.isDisabledStandard,
     profile.isSocialEnterprise,
   ]);

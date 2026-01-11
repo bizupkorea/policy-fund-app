@@ -124,7 +124,7 @@ export function Step4Summary({
                 profile.isMainbiz && '메인비즈',
                 profile.hasPatent && '특허',
                 profile.hasResearchInstitute && '연구소',
-                profile.hasExportRecord && '수출',
+                profile.exportRevenue > 0 && `수출 $${profile.exportRevenue}만불`,
                 profile.isDisabledStandard && '장애인표준사업장',
                 profile.isSocialEnterprise && '사회적기업',
               ].filter(Boolean).join(', ') || '없음'}

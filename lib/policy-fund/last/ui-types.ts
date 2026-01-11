@@ -54,7 +54,7 @@ export interface TestProfile {
   hasIsoCertification: boolean;
   hasPatent: boolean;
   hasResearchInstitute: boolean;
-  hasExportRecord: boolean;
+  exportRevenue: number;  // 만불 단위 (예: 100 = 100만불)
 
   // 대표자 정보
   ceoAge: number;
@@ -137,7 +137,7 @@ export const EMPTY_PROFILE: TestProfile = {
   hasIsoCertification: false,
   hasPatent: false,
   hasResearchInstitute: false,
-  hasExportRecord: false,
+  exportRevenue: 0,
   ceoAge: 40,
   isFemale: false,
   isDisabled: false,

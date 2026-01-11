@@ -77,7 +77,7 @@ export default function TestPage() {
         location: profile.location,
         annualRevenue: profile.annualRevenue * 100000000, // 억 → 원
         employeeCount: profile.employeeCount,
-        hasExportRevenue: profile.hasExportRecord,
+        hasExportRevenue: profile.exportRevenue > 0,
         hasRndActivity: profile.hasResearchInstitute || profile.hasPatent,
         isVentureCompany: profile.isVenture,
         isInnobiz: profile.isInnobiz,
@@ -727,7 +727,8 @@ export default function TestPage() {
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-medium text-gray-600">
                       중진공 정책자금 이용 횟수
-                      {profile.kosmesPreviousCount >= 4 && <span className="text-red-500 ml-2">⚠️ 졸업제 해당</span>}
+                      {profile.kosmesPreviousCount >= 5 && <span className="text-red-500 ml-2">⚠️ 졸업제 해당</span>}
+                      {profile.kosmesPreviousCount === 4 && <span className="text-orange-500 ml-2">⚠️ 졸업제 임박</span>}
                     </label>
                     <div className="flex items-center gap-1">
                       <input

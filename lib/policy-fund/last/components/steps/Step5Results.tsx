@@ -6,7 +6,6 @@
  * Step 5: AI 매칭 결과 표시
  */
 
-import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import { DetailedMatchResult } from '../../types';
 import { ResultCard } from '../shared/ResultCard';
@@ -26,6 +25,8 @@ interface Step5ResultsProps {
   mediumCount: number;
   lowCount: number;
   goToStep: (step: number) => void;
+  expandedAccordions: string[];
+  toggleAccordion: (id: string) => void;
 }
 
 export function Step5Results({
@@ -35,8 +36,10 @@ export function Step5Results({
   mediumCount,
   lowCount,
   goToStep,
+  expandedAccordions,
+  toggleAccordion,
 }: Step5ResultsProps) {
-  const [showAllResults, setShowAllResults] = useState(false);
+  const showAllResults = expandedAccordions.includes('step5-results');
   const displayResults = showAllResults ? results : results.slice(0, 5);
 
   return (
@@ -98,7 +101,7 @@ export function Step5Results({
 
           {results.length > 5 && (
             <button
-              onClick={() => setShowAllResults(!showAllResults)}
+              onClick={() => toggleAccordion('step5-results')}
               className="w-full py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200"
             >
               {showAllResults ? (

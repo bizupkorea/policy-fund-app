@@ -13,6 +13,25 @@ import { Check } from 'lucide-react';
 import { TestProfile, GuaranteeOrg } from '../../ui-types';
 import { Accordion } from '../shared/Accordion';
 
+// 고정 환율 (2025년 1월 기준)
+const USD_TO_KRW = 1459;
+
+// 원화 포맷 함수 (억/만원 단위)
+function formatKRW(amount: number): string {
+  const billion = Math.floor(amount / 100000000); // 억
+  const tenThousand = Math.floor((amount % 100000000) / 10000); // 만
+
+  if (billion > 0 && tenThousand > 0) {
+    return `${billion}억 ${tenThousand.toLocaleString()}만원`;
+  } else if (billion > 0) {
+    return `${billion}억원`;
+  } else if (tenThousand > 0) {
+    return `${tenThousand.toLocaleString()}만원`;
+  } else {
+    return '0원';
+  }
+}
+
 interface Step3ConditionsProps {
   profile: TestProfile;
   updateProfile: <K extends keyof TestProfile>(key: K, value: TestProfile[K]) => void;
@@ -139,24 +158,39 @@ export function Step3Conditions({
               <span className="text-sm">📈</span>
               <span className="text-xs font-semibold text-slate-700">사업 성과</span>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {[
-                { key: 'hasExportRecord', label: '수출 실적' },
-                { key: 'isDisabledStandard', label: '장애인표준사업장' },
-                { key: 'isSocialEnterprise', label: '사회적기업' },
-              ].map((cert) => (
-                <ToggleButton
-                  key={cert.key}
-                  label={cert.label}
-                  isChecked={profile[cert.key as keyof TestProfile] as boolean}
-                  onClick={() =>
-                    updateProfile(
-                      cert.key as keyof TestProfile,
-                      !(profile[cert.key as keyof TestProfile] as boolean)
-                    )
-                  }
-                />
-              ))}
+            <div className="space-y-1">
+              <div className="flex items-center gap-3">
+                <label className="text-xs font-medium text-slate-600">수출 실적</label>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm text-slate-500">$</span>
+                  <input
+                    type="number"
+                    value={profile.exportRevenue}
+                    onChange={(e) =>
+                      updateProfile(
+                        'exportRevenue',
+                        Math.max(0, Math.min(99999, parseInt(e.target.value) || 0))
+                      )
+                    }
+                    min={0}
+                    max={99999}
+                    placeholder="0"
+                    className="w-24 px-2 py-1.5 text-sm text-right border border-slate-200 rounded-lg bg-white focus:ring-4 focus:ring-orange-400/40 focus:border-orange-500 transition-all duration-300"
+                  />
+                  <span className="text-xs text-slate-500">만불</span>
+                </div>
+                {profile.exportRevenue > 0 && (
+                  <span className="text-xs text-emerald-600 font-medium">
+                    ✓ 수출실적 보유
+                  </span>
+                )}
+              </div>
+              {/* 원화 환산액 표시 */}
+              {profile.exportRevenue > 0 && (
+                <div className="ml-[4.5rem] text-xs text-slate-400">
+                  원화 약 {formatKRW(profile.exportRevenue * 10000 * USD_TO_KRW)}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -173,20 +207,20 @@ export function Step3Conditions({
             ? '이력 있음'
             : undefined
         }
-        purposeLabel="참고 정보"
-        purposeColor="blue"
+        purposeLabel="이력 확인"
+        purposeColor="amber"
       >
         <div className="space-y-4">
-          {/* 기존 대출 잔액 */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-medium text-gray-600">
-                기존 대출 잔액
+          {/* 은행권 기존대출 / 중진공 이용 횟수 */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                은행권 기존대출
                 {profile.existingLoanBalance >= 15 && (
-                  <span className="text-red-500 ml-2">⚠️ 한도 초과 우려</span>
+                  <span className="text-red-500 ml-1">⚠️ 한도초과</span>
                 )}
                 {profile.existingLoanBalance >= 10 && profile.existingLoanBalance < 15 && (
-                  <span className="text-orange-500 ml-2">⚠️ 한도 근접</span>
+                  <span className="text-orange-500 ml-1">⚠️ 한도근접</span>
                 )}
               </label>
               <div className="flex items-center gap-1">
@@ -201,40 +235,19 @@ export function Step3Conditions({
                   }
                   min={0}
                   max={50}
-                  className="w-20 px-2 py-1 text-sm text-right border border-slate-200 rounded-lg bg-white focus:ring-4 focus:ring-orange-400/40 focus:border-orange-500 focus:shadow-[0_0_25px_rgba(249,115,22,0.35)] transition-all duration-300"
+                  className="w-full px-3 py-2 text-sm text-right border border-slate-200 rounded-lg bg-white focus:ring-4 focus:ring-orange-400/40 focus:border-orange-500 transition-all duration-300"
                 />
                 <span className="text-xs text-slate-500">억원</span>
               </div>
             </div>
-            <p className="text-xs text-slate-500 mb-2">(중복 지원 가능 여부 판단에 사용됩니다)</p>
-            <input
-              type="range"
-              value={profile.existingLoanBalance}
-              onChange={(e) => updateProfile('existingLoanBalance', parseInt(e.target.value))}
-              min={0}
-              max={50}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
-            />
-          </div>
-
-          {/* 재창업 기업 */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={profile.isRestart}
-              onChange={(e) => updateProfile('isRestart', e.target.checked)}
-              className="w-4 h-4 rounded border-gray-300 text-orange-500 focus:ring-orange-500"
-            />
-            <span className="text-sm text-gray-700">재창업 기업</span>
-          </label>
-
-          {/* 중진공 이용 횟수 */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="text-xs font-medium text-gray-600">
-                중진공 정책자금 이용 횟수
-                {profile.kosmesPreviousCount >= 4 && (
-                  <span className="text-red-500 ml-2">⚠️ 졸업제 해당</span>
+            <div>
+              <label className="block text-xs font-medium text-gray-600 mb-1">
+                중진공 이용 횟수
+                {profile.kosmesPreviousCount >= 5 && (
+                  <span className="text-red-500 ml-1">⚠️ 졸업제</span>
+                )}
+                {profile.kosmesPreviousCount === 4 && (
+                  <span className="text-orange-500 ml-1">⚠️ 졸업제 임박</span>
                 )}
               </label>
               <div className="flex items-center gap-1">
@@ -249,19 +262,11 @@ export function Step3Conditions({
                   }
                   min={0}
                   max={10}
-                  className="w-20 px-2 py-1 text-sm text-right border border-slate-200 rounded-lg bg-white focus:ring-4 focus:ring-orange-400/40 focus:border-orange-500 focus:shadow-[0_0_25px_rgba(249,115,22,0.35)] transition-all duration-300"
+                  className="w-full px-3 py-2 text-sm text-right border border-slate-200 rounded-lg bg-white focus:ring-4 focus:ring-orange-400/40 focus:border-orange-500 transition-all duration-300"
                 />
                 <span className="text-xs text-slate-500">회</span>
               </div>
             </div>
-            <input
-              type="range"
-              value={profile.kosmesPreviousCount}
-              onChange={(e) => updateProfile('kosmesPreviousCount', parseInt(e.target.value))}
-              min={0}
-              max={10}
-              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-orange-500"
-            />
           </div>
 
           {/* 보증기관 이용 현황 */}
@@ -380,9 +385,75 @@ export function Step3Conditions({
         onToggle={() => toggleAccordion('constraints')}
         badge={constraintCount > 0 ? `${constraintCount}개 확인` : undefined}
         purposeLabel="사전 확인"
-        purposeColor="slate"
+        purposeColor="red"
       >
         <div className="space-y-4">
+          {/* 하드컷 경고 박스 - 즉시 제외 조건 체크 시 표시 */}
+          {(profile.isCurrentlyDelinquent ||
+            profile.hasUnresolvedGuaranteeAccident ||
+            (profile.hasTaxDelinquency && !profile.hasTaxInstallmentApproval) ||
+            (profile.hasPastDefault && !profile.isPastDefaultResolved)) && (
+            <div className="bg-red-50 rounded-xl p-4 border border-red-200">
+              <div className="flex items-start gap-3">
+                <span className="text-xl">🚫</span>
+                <div>
+                  <p className="text-sm text-red-800 font-semibold mb-1">
+                    현재 상태에서는 일반 정책자금 신청이 어렵습니다
+                  </p>
+                  <ul className="text-xs text-red-700 space-y-0.5 list-disc list-inside">
+                    {profile.isCurrentlyDelinquent && <li>금융기관 연체 진행 중</li>}
+                    {profile.hasUnresolvedGuaranteeAccident && <li>보증사고 미정리 상태</li>}
+                    {profile.hasTaxDelinquency && !profile.hasTaxInstallmentApproval && (
+                      <li>세금 체납 (분납 미승인)</li>
+                    )}
+                    {profile.hasPastDefault && !profile.isPastDefaultResolved && (
+                      <li>과거 부실 이력 (미정리)</li>
+                    )}
+                  </ul>
+                  <p className="text-xs text-red-600 mt-2">
+                    → 재도전 특례자금 또는 해소 후 재신청을 권장합니다
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 조건부 경고 박스 - 휴·폐업, 신용회복, 정리 완료 */}
+          {(profile.isInactive ||
+            profile.isCreditRecoveryInProgress ||
+            (profile.hasPastDefault && profile.isPastDefaultResolved) ||
+            (profile.hasTaxDelinquency && profile.hasTaxInstallmentApproval)) &&
+            !(profile.isCurrentlyDelinquent ||
+              profile.hasUnresolvedGuaranteeAccident ||
+              (profile.hasTaxDelinquency && !profile.hasTaxInstallmentApproval) ||
+              (profile.hasPastDefault && !profile.isPastDefaultResolved)) && (
+            <div className="bg-amber-50 rounded-xl p-4 border border-amber-200">
+              <div className="flex items-start gap-3">
+                <span className="text-xl">⚠️</span>
+                <div>
+                  <p className="text-sm text-amber-800 font-semibold mb-1">
+                    조건부 신청 가능
+                  </p>
+                  <ul className="text-xs text-amber-700 space-y-0.5 list-disc list-inside">
+                    {profile.isInactive && <li>휴·폐업 → 재창업/재도전 전용자금만</li>}
+                    {profile.isCreditRecoveryInProgress && (
+                      <li>신용회복 진행 중 → 재창업/재도전 전용자금만 (우대)</li>
+                    )}
+                    {profile.hasPastDefault && profile.isPastDefaultResolved && (
+                      <li>과거 부실 정리 완료 → 재도전자금 우대, 일반자금 감점</li>
+                    )}
+                    {profile.hasTaxDelinquency && profile.hasTaxInstallmentApproval && (
+                      <li>세금 분납 승인 → 심사 시 일부 감점</li>
+                    )}
+                  </ul>
+                  <p className="text-xs text-amber-600 mt-2">
+                    → 대안 상품 중심으로 추천해 드립니다
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
             <p className="text-sm text-slate-700 font-medium mb-1">
               현재 아래 사항에 해당하는 것이 있나요?

@@ -10,11 +10,12 @@ import type {
   DetailedMatchResult,
   AIAdvisorResult,
   IndustryCategory,
+  EnhancedMatchResult,
 } from '../types';
 import {
   POLICY_FUND_KNOWLEDGE_BASE,
 } from '../knowledge-base';
-import { checkAllFundsEligibility } from '../eligibility';
+import { checkAllFundsEligibility, generateDetailedReasons } from '../eligibility';
 import { analyzePortfolio, quickAnalyze } from '../gemini-advisor';
 import { convertToKBProfile } from './converter';
 import {
@@ -29,7 +30,7 @@ import { convertToDetailedMatchResult, checkKeywordExclusion } from './helpers';
 import { determineCompanyScale, isStrategicIndustry, getStrategicIndustryBonus } from './company-scale';
 
 // ============================================================================
-// Re-exports
+// Re-exports (기존)
 // ============================================================================
 
 export { convertToKBProfile, SIZE_MAP, normalizeCompanySize } from './converter';
@@ -56,6 +57,78 @@ export {
 } from './scorer';
 export { convertToDetailedMatchResult, checkKeywordExclusion } from './helpers';
 export { classifyMatchResults, getTrackLabelKorean } from './classifier';
+
+// ============================================================================
+// Re-exports (리팩토링 모듈)
+// ============================================================================
+
+// Config (설정 중앙화)
+export {
+  FUND_CATEGORIES,
+  FUND_KEYWORDS,
+  DIRECT_LOAN_INSTITUTIONS,
+  GUARANTEE_INSTITUTIONS,
+  INSTITUTION_LABELS,
+  isFundInCategory,
+  matchesKeywords,
+  isRestartFund,
+  isInnovationFund,
+  isDirectLoanInstitution,
+  isGuaranteeInstitution,
+  SCORING_CONFIG,
+  RANK_DIFFERENTIATION,
+  getRankPenalty,
+  INSTITUTION_BONUS,
+  getInstitutionBonus,
+  CERTIFICATION_BONUS,
+  FUNDING_PURPOSE_BONUS,
+  TRACK_PRIORITY as NEW_TRACK_PRIORITY,
+  clampScore,
+  applyBonus,
+  applyPenalty,
+  KOSMES_GRADUATION,
+  GUARANTEE_ORG,
+  LOAN_BALANCE,
+  SUBSIDY_RATIO,
+  SPECIAL_BONUSES,
+  CONFLICT_PENALTIES,
+  FUNDING_AMOUNT,
+  HARD_CUT_MESSAGES,
+} from './config';
+
+// Filters (필터)
+export {
+  isHardExcluded,
+  needsRestartFundsOnly,
+  applyHardCutFilters,
+  applyDiversityFilter,
+  isSpecialPurposeFund,
+} from './filters';
+
+// Scoring (점수 계산)
+export {
+  ALL_EVALUATORS,
+  getEvaluatorById,
+  getEvaluatorsByPriority,
+  applyScoring,
+  calculateInstitutionBonus,
+  calculateCertificationBonus,
+  applyRankDifferentiation,
+} from './scoring';
+export type { Evaluator, EvaluationResult } from './scoring';
+
+// Sorting (정렬)
+export {
+  getSortPriority,
+  adjustPriorityForSpecialPurpose,
+  applySorting,
+} from './sorting';
+
+// Pipeline (파이프라인) - 신규 매칭 함수
+export {
+  matchWithKnowledgeBase as matchWithKnowledgeBaseV2,
+} from './pipeline';
+export type { MatchOptions, MatchResult } from './pipeline';
 
 // ============================================================================
 // 메인 매칭 함수
@@ -98,6 +171,13 @@ export async function matchWithKnowledgeBase(
   const envFundIds = ['keiti-env-growth', 'keiti-env-facility'];
   if (!profile.fundingPurposeDetails?.environmentInvestment) {
     eligibilityResults = eligibilityResults.filter(r => !envFundIds.includes(r.fundId));
+  }
+
+  // 신재생에너지보증 하드컷 필터링
+  // 신재생에너지 사업자가 아니면 신재생에너지 전용 보증 제외
+  const greenEnergyFundIds = ['kibo-green-energy'];
+  if (!profile.isGreenEnergyBusiness) {
+    eligibilityResults = eligibilityResults.filter(r => !greenEnergyFundIds.includes(r.fundId));
   }
 
   // 전용자격 체크
@@ -162,14 +242,18 @@ export async function matchWithKnowledgeBase(
   // ============================================================================
   // 하드컷: 정책자금 신청 불가 조건
   // ============================================================================
-  // 1. 휴·폐업
-  // 2. 세금 체납 (분납 승인 없는 경우)
-  // 3. 금융기관 연체 중
-  // 4. 보증사고 미정리
-  // 5. 과거 부실 미정리
+  // A. 즉시 제외 (하드컷):
+  //    - 금융기관 연체 중
+  //    - 보증사고 미정리
+  // B. 조건부 가능 (재도전자금만):
+  //    - 휴·폐업 → 재창업/재도전 전용자금만
+  //    - 신용회복 진행 중 → 재창업/재도전 전용자금만
+  //    - 과거 부실(정리 완료) → 감점 처리
+  //    - 세금 체납(분납 승인) → 감점 처리 (기존)
   // ============================================================================
+
+  // A. 즉시 제외 (하드컷) - 일반자금 전면 제외
   const isHardExcluded =
-    profile.isInactive ||                                                    // 휴·폐업
     (profile.taxDelinquencyStatus === 'active' && !profile.hasTaxInstallmentApproval) ||  // 세금 체납 (분납 미승인)
     profile.creditIssueStatus === 'current' ||                              // 신용문제 (현재)
     profile.isCurrentlyDelinquent ||                                        // 금융 연체 중
@@ -178,6 +262,17 @@ export async function matchWithKnowledgeBase(
 
   if (isHardExcluded) {
     eligibilityResults = [];
+  }
+
+  // B-1. 휴·폐업 또는 신용회복 중 → 재창업/재도전 전용자금만 노출
+  const needsRestartFundsOnly = (profile.isInactive || profile.isCreditRecoveryInProgress) && !isHardExcluded;
+  if (needsRestartFundsOnly) {
+    const restartFundKeywords = ['재도전', '재창업', '재기', '재도약'];
+    eligibilityResults = eligibilityResults.filter(r => {
+      const fund = POLICY_FUND_KNOWLEDGE_BASE.find(f => f.id === r.fundId);
+      if (!fund) return false;
+      return restartFundKeywords.some(kw => fund.name.includes(kw) || r.fundId.includes('restart'));
+    });
   }
 
   // isEligible 필터링
@@ -243,6 +338,13 @@ export async function matchWithKnowledgeBase(
         r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
       }
     });
+  } else if (kosmesPrevCount === 3) {
+    // 3회: 경고만 (감점 없음)
+    resultsWithBonus.forEach(r => {
+      if (r.institutionId === 'kosmes') {
+        r.warnings.push('중진공 정책자금 3회 이용 (졸업제 주의 - 2회 남음)');
+      }
+    });
   }
 
   // 최근 2년 내 중진공 이용: 추가 -10 감점
@@ -280,8 +382,10 @@ export async function matchWithKnowledgeBase(
         // 케이스 2: 타기관 이용 중 → -10
         penalty = 10;
         message = '타 보증기관 이용 중 (전환 시 심사 필요)';
+      } else if ((isKibo && usingKibo) || (isKodit && usingKodit)) {
+        // 케이스 3: 동일 기관 추가 이용 → 감점 없지만 경고 추가
+        r.warnings.push(`${isKibo ? '기보' : '신보'} 이용 중 - 추가 보증 한도 확인 필요`);
       }
-      // 케이스 3: 동일 기관 추가 → 감점 없음 (보류)
 
       if (penalty > 0) {
         r.score = Math.max(0, r.score - penalty);
@@ -321,16 +425,41 @@ export async function matchWithKnowledgeBase(
     });
   }
 
-  // 가점 로직: 과거 부실 정리 완료 (재도전 자금 우대)
+  // 가점/감점 로직: 과거 부실 정리 완료
   // 주의: 과거 부실 미정리(isPastDefaultResolved=false)는 하드컷에서 이미 제외됨
   if (profile.hasPastDefault && profile.isPastDefaultResolved) {
     resultsWithBonus.forEach(r => {
       const isRestartFund = r.fundId.includes('restart') || r.fundName.includes('재창업') || r.fundName.includes('재도약') || r.fundName.includes('재기');
 
       if (isRestartFund) {
+        // 재도전 자금: +20 가점
         r.score = Math.min(100, r.score + 20);
         r.eligibilityReasons.push('과거 부실 정리 완료 - 재도전 자금 최우선 추천');
+      } else {
+        // 일반 자금: -15 감점 + 경고
+        r.score = Math.max(0, r.score - 15);
+        r.warnings.push('과거 부실 이력 (정리 완료 - 심사 시 불이익 가능)');
       }
+      r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
+    });
+  }
+
+  // 휴·폐업 경고 메시지 추가
+  if (profile.isInactive) {
+    resultsWithBonus.forEach(r => {
+      r.warnings.push('휴·폐업 상태 - 재창업/재도전 전용자금만 신청 가능');
+    });
+  }
+
+  // 신용회복 진행 중 경고 메시지 추가 + 재도전 자금 가점
+  if (profile.isCreditRecoveryInProgress) {
+    resultsWithBonus.forEach(r => {
+      const isRestartFund = r.fundId.includes('restart') || r.fundName.includes('재창업') || r.fundName.includes('재도약') || r.fundName.includes('재기');
+      if (isRestartFund) {
+        r.score = Math.min(100, r.score + 15);
+        r.eligibilityReasons.push('신용회복 진행 중 - 재도전자금 우대 대상');
+      }
+      r.warnings.push('신용회복 절차 진행 중 - 재창업/재도전 전용자금만 신청 가능');
       r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
     });
   }
@@ -348,21 +477,50 @@ export async function matchWithKnowledgeBase(
     });
   }
 
-  // 감점: 최근 1년 정책자금 수혜액 (단계별 감점)
+  // 감점: 최근 1년 정책자금 수혜액 (매출 대비 비율 기반)
+  // 비율 기준: 10% 이하 정상, 10-20% 주의, 20-30% 제한, 30% 초과 강한 제한
   const recentSubsidy = profile.recentYearSubsidyAmount ?? 0;
-  if (recentSubsidy >= 3) {
+  const revenueForSubsidy = profile.revenue ?? 0;
+  const subsidyRatio = revenueForSubsidy > 0 ? (recentSubsidy / revenueForSubsidy) : 0;
+
+  if (recentSubsidy > 0 && revenueForSubsidy > 0) {
+    resultsWithBonus.forEach(r => {
+      let penalty = 0;
+      let message = '';
+      const ratioPercent = Math.round(subsidyRatio * 100);
+
+      if (subsidyRatio > 0.3) {
+        // 30% 초과: 강한 제한
+        penalty = 30;
+        message = `최근 1년 수혜액/매출 비율 과다 (${ratioPercent}%, 추가 지원 제한 가능)`;
+      } else if (subsidyRatio > 0.2) {
+        // 20-30%: 제한
+        penalty = 20;
+        message = `최근 1년 수혜액/매출 비율 ${ratioPercent}% (심사 시 고려됨)`;
+      } else if (subsidyRatio > 0.1) {
+        // 10-20%: 주의
+        penalty = 10;
+        message = `최근 1년 수혜액/매출 비율 ${ratioPercent}% (주의)`;
+      }
+      // 10% 이하: 감점 없음
+
+      if (penalty > 0) {
+        r.score = Math.max(0, r.score - penalty);
+        r.warnings.push(message);
+        r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
+      }
+    });
+  } else if (recentSubsidy >= 5 && revenueForSubsidy === 0) {
+    // 매출 정보 없이 수혜액만 있는 경우: 절대금액 기준 적용 (fallback)
     resultsWithBonus.forEach(r => {
       let penalty = 0;
       let message = '';
 
       if (recentSubsidy >= 10) {
-        penalty = 30;
-        message = `최근 1년 정책자금 수혜 과다 (${recentSubsidy}억원, 추가 지원 제한 가능)`;
-      } else if (recentSubsidy >= 5) {
-        penalty = 20;
-        message = `최근 1년 정책자금 수혜 (${recentSubsidy}억원, 심사 시 고려됨)`;
+        penalty = 25;
+        message = `최근 1년 정책자금 수혜 과다 (${recentSubsidy}억원)`;
       } else {
-        penalty = 10;
+        penalty = 15;
         message = `최근 1년 정책자금 수혜 (${recentSubsidy}억원)`;
       }
 
@@ -634,6 +792,63 @@ export async function matchWithKnowledgeBase(
   }
 
   // ============================================================================
+  // 사회적가치 기업 전용 로직 (장애인표준사업장 / 사회적기업)
+  // ============================================================================
+  // - 전용자금 4개: +50점 (최우선 추천)
+  // - 일반자금: 베이스 +10점 (정책적 우대 대상)
+  // ============================================================================
+  if (profile.isDisabledStandard || profile.isSocialEnterprise) {
+    const socialFundIds = [
+      'kosmes-social-enterprise',  // 사회적기업전용자금
+      'semas-disabled',            // 장애인기업지원자금
+      'kibo-social-venture',       // 소셜벤처보증
+      'kodit-social-venture',      // 소셜벤처보증
+    ];
+    const socialKeywords = ['사회적', '장애인', '소셜벤처'];
+
+    resultsWithBonus.forEach(r => {
+      const isSocialFund = socialFundIds.includes(r.fundId) ||
+                            socialKeywords.some(kw => r.fundName.includes(kw));
+
+      if (isSocialFund) {
+        r.score = Math.min(100, r.score + 50);
+        r.eligibilityReasons.push('사회적가치 기업 전용자금 - 최우선 추천');
+      } else {
+        r.score = Math.min(100, r.score + 10);
+        r.eligibilityReasons.push('사회적가치 기업 우대 대상');
+      }
+      r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
+    });
+  }
+
+  // ============================================================================
+  // 충돌 조정 로직 (상충되는 특수자금 선택 시)
+  // ============================================================================
+  // 긴급경영 + IPO/투자유치 → 긴급경영 우선 (투융자복합금융 -20점)
+  // 재창업 + 벤처투자실적 → 재도전자금 우선 (혁신성장자금 -15점)
+  // ============================================================================
+  if (profile.isEmergencySituation && profile.hasIpoOrInvestmentPlan) {
+    resultsWithBonus.forEach(r => {
+      if (r.fundId === 'kosmes-investment-loan') {
+        r.score = Math.max(0, r.score - 20);
+        r.warnings.push('긴급경영 상황에서 투자유치형 자금은 부적합');
+        r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
+      }
+    });
+  }
+
+  if (profile.isRestart && profile.hasVentureInvestment) {
+    const innovationFundIds = ['kosmes-investment-loan', 'kodit-innovation-growth'];
+    resultsWithBonus.forEach(r => {
+      if (innovationFundIds.includes(r.fundId)) {
+        r.score = Math.max(0, r.score - 15);
+        r.warnings.push('재창업 기업은 재도전자금 우선 검토 권장');
+        r.level = r.score >= 70 ? 'high' : r.score >= 40 ? 'medium' : 'low';
+      }
+    });
+  }
+
+  // ============================================================================
   // 정렬: 4단계 트랙 우선순위 (Hard Sorting)
   // ============================================================================
   // 1. 특화자금: 인증/자격 기반 전용 (exclusive 트랙)
@@ -691,17 +906,29 @@ export async function matchWithKnowledgeBase(
   // ============================================================================
   // 인증/자격 가점 계산
   // ============================================================================
-  // 벤처기업 +15, 이노비즈 +10, 메인비즈 +5, 특허보유 +10, 수출실적 +10
+  // 인증 가점 (그룹별 1회만 인정, 총합 상한 +25)
+  // ============================================================================
+  // 그룹1: 기업유형 인증 (벤처 +10, 이노비즈/메인비즈 +5) → 최대 +10
+  // 그룹2: 기술·연구 (연구소 +10, 특허 +5) → 최대 +10
+  // 그룹3: 사업성과 (수출실적 +5) → 최대 +5
   // ============================================================================
   const getCertificationBonus = (): number => {
-    let bonus = 0;
-    if (profile.isVentureCompany) bonus += 15;
-    if (profile.isInnobiz) bonus += 10;
-    if (profile.isMainbiz) bonus += 5;
-    if (profile.hasPatent) bonus += 10;
-    if (profile.hasExportRevenue) bonus += 10;
-    if (profile.hasRndActivity) bonus += 5;
-    return bonus;
+    // 그룹1: 기업유형 인증 (택1 최대)
+    let group1 = 0;
+    if (profile.isVentureCompany) group1 = 10;
+    else if (profile.isInnobiz) group1 = 5;
+    else if (profile.isMainbiz) group1 = 5;
+
+    // 그룹2: 기술·연구 (택1 최대)
+    let group2 = 0;
+    if (profile.hasRndActivity) group2 = 10;  // 기업부설연구소
+    else if (profile.hasPatent) group2 = 5;
+
+    // 그룹3: 사업성과
+    let group3 = 0;
+    if (profile.hasExportRevenue) group3 = 5;
+
+    return group1 + group2 + group3;  // 최대 +25
   };
 
   const certificationBonus = getCertificationBonus();
@@ -714,6 +941,29 @@ export async function matchWithKnowledgeBase(
     (r as any)._institutionBonus = getInstitutionBonus(r.institutionId);
     // 기관 가산점 + 인증/자격 가점 합산
     (r as any)._totalBonus = (r as any)._institutionBonus + certificationBonus;
+
+    // ============================================================================
+    // 특수목적자금 트랙 우선순위 상향 (사용자 선택 기반)
+    // ============================================================================
+    // 스마트공장 계획 선택 시 → 스마트공장자금 exclusive 트랙으로 간주
+    if (profile.hasSmartFactoryPlan && r.fundId === 'kosmes-smart-factory') {
+      (r as any)._sortPriority = 1;  // exclusive와 동일
+    }
+
+    // IPO/투자 계획 선택 시 → 투융자복합금융 exclusive 트랙으로 간주
+    if (profile.hasIpoOrInvestmentPlan && r.fundId === 'kosmes-investment-loan') {
+      (r as any)._sortPriority = 1;
+    }
+
+    // ESG/탄소중립 계획 선택 시 → 탄소중립자금 exclusive 트랙으로 간주
+    if (profile.hasEsgInvestmentPlan && r.fundId === 'kosmes-carbon-neutral') {
+      (r as any)._sortPriority = 1;
+    }
+
+    // 긴급경영 상황 선택 시 → 긴급경영안정자금 exclusive 트랙으로 간주
+    if (profile.isEmergencySituation && r.fundId === 'kosmes-emergency') {
+      (r as any)._sortPriority = 1;
+    }
 
     // 전략산업 + 소상공인 + 중진공 = 이유 추가
     if (isStrategic && isMicro && r.institutionId === 'kosmes') {
@@ -747,12 +997,31 @@ export async function matchWithKnowledgeBase(
   // ============================================================================
   // 동일 기관 자금은 Top 5 리스트 중 최대 2개까지만 포함
   // 효과: 중진공 자금이 10개 있어도 1,2위만 노출되고, 3위부터는 다른 기관에 기회
+  // 예외: 특수목적자금 (스마트공장, 투융자복합, 탄소중립, 긴급경영안정)은 다양성 필터 무시
   // ============================================================================
   const MAX_PER_INSTITUTION = 2;
+
+  // 특수목적자금 ID (다양성 필터 예외)
+  const SPECIAL_PURPOSE_FUND_IDS = [
+    'kosmes-smart-factory',      // 스마트공장자금
+    'kosmes-investment-loan',    // 투융자복합금융
+    'kosmes-carbon-neutral',     // 탄소중립자금
+    'kosmes-emergency',          // 긴급경영안정자금
+  ];
+
   const institutionCount: Record<string, number> = {};
   const diversifiedResults: DetailedMatchResult[] = [];
 
   for (const r of resultsWithBonus) {
+    // 특수목적자금은 다양성 필터 예외 (기관 카운트에 포함 안 함)
+    const isSpecialPurpose = SPECIAL_PURPOSE_FUND_IDS.includes(r.fundId);
+
+    if (isSpecialPurpose) {
+      diversifiedResults.push(r);
+      if (diversifiedResults.length >= Math.min(topN, MAX_RESULTS)) break;
+      continue;
+    }
+
     const count = institutionCount[r.institutionId] || 0;
     if (count < MAX_PER_INSTITUTION) {
       diversifiedResults.push(r);
@@ -769,17 +1038,16 @@ export async function matchWithKnowledgeBase(
   });
 
   // ============================================================================
-  // 자동 문구 생성 (Auto Reason/Warning Generation)
+  // 고도화된 적격 사유 생성 (3사 통합: Claude + Gemini + GPT)
   // ============================================================================
-  // matched 자금: eligibilityReasons가 비어있으면 자동 생성
-  // 효과: 사용자에게 "왜 이 자금이 추천됐는지" 최소 1개 이상 설명 제공
+  // 1단계: 기존 자동 문구 생성 (기본 fallback)
+  // 2단계: generateDetailedReasons()로 상세 적격 사유 생성
   // ============================================================================
-  diversifiedResults.forEach(r => {
+  const enhancedResults: EnhancedMatchResult[] = diversifiedResults.map(r => {
     const fund = POLICY_FUND_KNOWLEDGE_BASE.find(f => f.id === r.fundId);
 
-    // eligibilityReasons가 비어있으면 자동 생성
+    // 기존 eligibilityReasons가 비어있으면 기본 문구 생성 (fallback)
     if (r.eligibilityReasons.length === 0) {
-      // 기관별 자동 문구
       const institutionLabels: Record<string, string> = {
         'kosmes': '중진공 직접대출',
         'semas': '소진공 직접대출',
@@ -788,7 +1056,6 @@ export async function matchWithKnowledgeBase(
       };
       const institutionLabel = institutionLabels[r.institutionId] || '정책자금';
 
-      // 트랙별 자동 문구
       if (r.track === 'exclusive') {
         r.eligibilityReasons.push(`전용자금 요건 충족 - ${institutionLabel} 우선 지원 대상`);
       } else if (r.track === 'policy_linked') {
@@ -796,11 +1063,9 @@ export async function matchWithKnowledgeBase(
       } else if (r.track === 'guarantee') {
         r.eligibilityReasons.push(`${institutionLabel} 심사 요건 충족`);
       } else {
-        // general
         r.eligibilityReasons.push(`${institutionLabel} 일반 지원 요건 충족`);
       }
 
-      // 한도 정보 추가 (있으면)
       if (fund?.terms.amount.max) {
         const maxInBillion = Math.round(fund.terms.amount.max / 100000000);
         if (maxInBillion > 0) {
@@ -808,9 +1073,56 @@ export async function matchWithKnowledgeBase(
         }
       }
     }
+
+    // 고도화된 적격 사유 생성 (3사 통합)
+    let detailedReasons: EnhancedMatchResult['detailedReasons'] = [];
+    let aiJudgment: EnhancedMatchResult['aiJudgment'] = {
+      killerPoint: '기본 요건 충족으로 신청 가능합니다',
+      improvementTip: '현재 조건으로 최적 매칭 상태입니다',
+      actionGuide: '신청 전 해당 기관 홈페이지에서 최신 공고 내용을 확인하십시오',
+      relatedFunds: [],
+      scoreBreakdown: '',
+    };
+
+    if (fund) {
+      try {
+        const detailed = generateDetailedReasons(profile, fund);
+        detailedReasons = detailed.detailedReasons;
+        aiJudgment = detailed.aiJudgment;
+      } catch (e) {
+        // 에러 발생 시 기본값 유지
+        console.warn(`Failed to generate detailed reasons for ${fund.id}:`, e);
+      }
+    }
+
+    return {
+      ...r,
+      detailedReasons,
+      aiJudgment,
+    } as EnhancedMatchResult;
   });
 
-  const results = diversifiedResults.map((result, index) => {
+  // ============================================================================
+  // 점수 차별화 (GPT 제안 반영)
+  // ============================================================================
+  // 1위만 100점 유지, 2순위부터 순차 감점
+  // 효과: 모든 자금이 100점으로 수렴하는 문제 해결
+  // ============================================================================
+  enhancedResults.forEach((result, index) => {
+    const rank = index + 1;
+    if (rank === 2) {
+      result.score = Math.max(0, result.score - 3);
+    } else if (rank === 3) {
+      result.score = Math.max(0, result.score - 6);
+    } else if (rank === 4) {
+      result.score = Math.max(0, result.score - 9);
+    } else if (rank >= 5) {
+      result.score = Math.max(0, result.score - 12);
+    }
+    result.level = result.score >= 70 ? 'high' : result.score >= 40 ? 'medium' : 'low';
+  });
+
+  const results = enhancedResults.map((result, index) => {
     const rank = index + 1;
     return {
       ...result,

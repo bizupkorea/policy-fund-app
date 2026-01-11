@@ -483,3 +483,133 @@ export const TRACK_PRIORITY: Record<MatchResultTrack, number> = {
   general: 3,
   guarantee: 4,
 };
+
+// ============================================================================
+// 고도화된 적격 사유 타입 (3사 통합: Claude + Gemini + GPT)
+// ============================================================================
+
+/** 여유도 구간 (GPT 제안) */
+export type SafetyZone = 'safe' | 'warning' | 'danger';
+
+/** 심사 영향도 (GPT 제안) */
+export type ImpactLevel = 'critical' | 'bonus' | 'supplementary';
+
+/** 적격 사유 카테고리 (Gemini 제안) */
+export type ReasonCategory = 'basic' | 'bonus' | 'strategic' | 'funding';
+
+/** 카테고리 라벨 */
+export const REASON_CATEGORY_LABELS: Record<ReasonCategory, string> = {
+  basic: '기본 자격 (Eligibility)',
+  bonus: '우대 가점 (Bonus)',
+  strategic: '전략적 부합성 (Strategy)',
+  funding: '자금 매칭',
+};
+
+/** 카테고리 아이콘 */
+export const REASON_CATEGORY_ICONS: Record<ReasonCategory, string> = {
+  basic: '📋',
+  bonus: '🎯',
+  strategic: '🚀',
+  funding: '💰',
+};
+
+/** 여유도 구간 표시 */
+export const SAFETY_ZONE_DISPLAY: Record<SafetyZone, { icon: string; label: string; color: string }> = {
+  safe: { icon: '🟢', label: '안정', color: 'text-emerald-500' },
+  warning: { icon: '🟡', label: '경계', color: 'text-amber-500' },
+  danger: { icon: '🔴', label: '위험', color: 'text-red-500' },
+};
+
+/** 심사 영향도 표시 */
+export const IMPACT_LEVEL_DISPLAY: Record<ImpactLevel, { label: string; bgColor: string; textColor: string }> = {
+  critical: { label: '핵심', bgColor: 'bg-blue-100', textColor: 'text-blue-700' },
+  bonus: { label: '가점', bgColor: 'bg-emerald-100', textColor: 'text-emerald-700' },
+  supplementary: { label: '보완', bgColor: 'bg-slate-100', textColor: 'text-slate-600' },
+};
+
+/** 개별 사유 항목 (GPT + Gemini 통합) */
+export interface EligibilityReasonItem {
+  /** 필드 식별자 (employeeCount, businessAge 등) */
+  field: string;
+  /** 필드 라벨 (직원 수, 업력 등) */
+  fieldLabel: string;
+  /** 사용자 입력값 ("7명", "2년 3개월") */
+  userValue: string;
+  /** 기준값 표시 ("(기준: 10인 미만)") */
+  criterion: string;
+  /** 여유도 구간 (GPT) */
+  safetyZone: SafetyZone;
+  /** 여유분 표시 ("여유: 3명") */
+  margin?: string;
+  /** 심사 영향도 (GPT) */
+  impactLevel: ImpactLevel;
+  /** 가점 점수 (+30, +15 등) */
+  impactScore?: number;
+  /** 혜택 설명 (Gemini) ("보증료율 0.2%p 감면") */
+  benefit?: string;
+  /** 추가 메모 */
+  note?: string;
+  /** 통과 여부 */
+  passed: boolean;
+}
+
+/** 카테고리별 적격 사유 그룹 */
+export interface DetailedEligibilityReason {
+  /** 카테고리 식별자 */
+  category: ReasonCategory;
+  /** 카테고리 라벨 ("기본 자격 (Eligibility)") */
+  categoryLabel: string;
+  /** 카테고리 아이콘 */
+  icon: string;
+  /** 해당 카테고리의 사유 목록 */
+  reasons: EligibilityReasonItem[];
+}
+
+/** AI 종합 판정 (Gemini + GPT 통합) */
+export interface AIJudgment {
+  /** 킬러 포인트 (Gemini) - 핵심 강점 */
+  killerPoint: string;
+  /** 보완 시 혜택 (Gemini) - 액션 유도 */
+  improvementTip: string;
+  /** 탈락 경계 (GPT) - 리스크 사전 인지 */
+  riskWarning?: string;
+  /** 실행 가이드 (Gemini) - 컨설팅 조언 */
+  actionGuide: string;
+  /** 연관 자금 (GPT) - 추가 검토 힌트 */
+  relatedFunds: string[];
+  /** 점수 산정 근거 (GPT) - 신뢰도 상승 */
+  scoreBreakdown: string;
+}
+
+/** 확장된 상세 매칭 결과 (기존 DetailedMatchResult 확장) */
+export interface EnhancedMatchResult extends DetailedMatchResult {
+  /** 고도화된 적격 사유 (카테고리별) */
+  detailedReasons: DetailedEligibilityReason[];
+  /** AI 종합 판정 */
+  aiJudgment: AIJudgment;
+}
+
+// ============================================================================
+// 여유도 계산 유틸리티 타입
+// ============================================================================
+
+/** 여유도 계산 결과 */
+export interface SafetyZoneResult {
+  zone: SafetyZone;
+  margin: number;
+  marginLabel: string;
+}
+
+/** 여유도 임계값 설정 */
+export interface SafetyThresholds {
+  /** 안정 구간 상한 (비율, 0-1) */
+  safe: number;
+  /** 경계 구간 상한 (비율, 0-1) */
+  warning: number;
+}
+
+/** 기본 임계값 */
+export const DEFAULT_SAFETY_THRESHOLDS: SafetyThresholds = {
+  safe: 0.7,     // 70% 이하 → 안정
+  warning: 0.9,  // 90% 이하 → 경계, 초과 → 위험
+};

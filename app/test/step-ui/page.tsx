@@ -7,7 +7,7 @@
  */
 
 import { useState, useCallback, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Play } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Play, RotateCcw } from 'lucide-react';
 
 // 분리된 모듈 import
 import {
@@ -67,6 +67,9 @@ export default function TestPage() {
   // 아코디언 상태 (Step 3용)
   const [expandedAccordions, setExpandedAccordions] = useState<string[]>([]);
 
+  // 초기화 확인 모달 상태
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+
   // 스크롤 영역 ref
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -91,7 +94,7 @@ export default function TestPage() {
         location: profile.location,
         annualRevenue: profile.annualRevenue * 100000000, // 억 → 원
         employeeCount: profile.employeeCount,
-        hasExportRevenue: profile.hasExportRecord,
+        hasExportRevenue: profile.exportRevenue > 0,
         hasRndActivity: profile.hasResearchInstitute || profile.hasPatent,
         isVentureCompany: profile.isVenture,
         isInnobiz: profile.isInnobiz,
@@ -201,15 +204,26 @@ export default function TestPage() {
 
   return (
     <div className="h-full overflow-hidden flex flex-col bg-slate-50">
-      <div className="max-w-7xl mx-auto px-4 w-full flex flex-col flex-1 overflow-hidden">
+      <div className="max-w-4xl mx-auto px-4 w-full flex flex-col flex-1 overflow-hidden">
         {/* 헤더 (고정 영역) */}
-        <div className="flex-shrink-0 py-4">
-          <h1 className="text-2xl font-bold text-slate-800">정책자금 매칭 테스트</h1>
-          <p className="text-slate-500 mt-1 text-sm">다양한 기업 조건을 설정하여 매칭 결과를 테스트합니다</p>
+        <div className="flex-shrink-0 pt-4 pb-2 px-3 flex justify-between items-start">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-800">정책자금 적합도 진단</h1>
+            <p className="text-[13px] text-gray-500 mt-1">기업 정보를 기반으로 신청 가능한 정책자금을 분석합니다</p>
+          </div>
+          <button
+            onClick={() => setShowResetConfirm(true)}
+            className="px-3 py-1.5 text-sm text-slate-600 hover:text-slate-800
+                       border border-slate-300 hover:border-slate-400
+                       rounded-lg transition-all flex items-center gap-1"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            새 진단 시작
+          </button>
         </div>
 
         {/* 메인 컨테이너 (가변 영역, 내부 스크롤) */}
-        <div className="flex-1 min-h-0 max-w-4xl mx-auto w-full flex flex-col overflow-hidden">
+        <div className="flex-1 min-h-0 w-full flex flex-col overflow-hidden">
           {/* Step Indicator (고정) */}
           <div className="flex-shrink-0 bg-white border border-slate-200 rounded-t-2xl shadow-sm p-4">
             <StepIndicator
@@ -243,6 +257,8 @@ export default function TestPage() {
                 profile={profile}
                 updateProfile={updateProfile}
                 setProfile={setProfile}
+                expandedAccordions={expandedAccordions}
+                toggleAccordion={toggleAccordion}
               />
             )}
 
@@ -277,6 +293,8 @@ export default function TestPage() {
                 mediumCount={mediumCount}
                 lowCount={lowCount}
                 goToStep={handleGoToStep}
+                expandedAccordions={expandedAccordions}
+                toggleAccordion={toggleAccordion}
               />
             )}
           </div>
@@ -345,18 +363,44 @@ export default function TestPage() {
                   </button>
                 </div>
               )}
-              {currentStep === 5 && (
-                <button
-                  onClick={handleReset}
-                  className="px-5 py-2.5 bg-slate-600 text-white rounded-xl font-semibold hover:bg-slate-700 transition-all duration-200 text-sm"
-                >
-                  새로 시작
-                </button>
-              )}
             </div>
           </div>
         </div>
       </div>
+
+      {/* 초기화 확인 모달 */}
+      {showResetConfirm && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-6 max-w-sm mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-slate-800 mb-2">
+              새 진단을 시작하시겠습니까?
+            </h3>
+            <p className="text-sm text-slate-500 mb-6">
+              현재 입력 정보가 모두 초기화됩니다.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowResetConfirm(false)}
+                className="flex-1 px-4 py-2.5 border border-slate-300
+                           text-slate-700 rounded-xl font-medium
+                           hover:bg-slate-50 transition-all"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  setShowResetConfirm(false);
+                  handleReset();
+                }}
+                className="flex-1 px-4 py-2.5 bg-slate-700 text-white
+                           rounded-xl font-medium hover:bg-slate-800 transition-all"
+              >
+                확인
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

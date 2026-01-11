@@ -3,20 +3,29 @@
 /**
  * lib/policy-fund/last/components/shared/ResultCard.tsx
  *
- * AI 매칭 결과 카드 컴포넌트
+ * AI 매칭 결과 카드 컴포넌트 (3사 통합 고도화 버전)
+ *
+ * 기능:
+ * - 카테고리별 적격 사유 표시 (기본/우대/전략/자금)
+ * - 여유도 구간 표시 (🟢🟡🔴)
+ * - 심사 영향도 태그 ([핵심]/[가점]/[보완])
+ * - AI 종합 판정 (킬러포인트, 보완제안, 탈락경계, 실행가이드)
  */
 
 import { useState } from 'react';
-import { ChevronDown, ExternalLink } from 'lucide-react';
+import { ChevronDown, ExternalLink, Lightbulb, AlertTriangle, TrendingUp, Sparkles } from 'lucide-react';
 import {
+  EnhancedMatchResult,
   DetailedMatchResult,
   InstitutionId,
   INSTITUTION_COLORS,
   INSTITUTION_NAMES,
+  SAFETY_ZONE_DISPLAY,
+  IMPACT_LEVEL_DISPLAY,
 } from '../../';
 
 interface ResultCardProps {
-  result: DetailedMatchResult;
+  result: EnhancedMatchResult | DetailedMatchResult;
   rank: number;
 }
 
@@ -41,12 +50,21 @@ const LEVEL_COLORS = {
   },
 };
 
+// EnhancedMatchResult인지 확인
+function isEnhancedResult(result: EnhancedMatchResult | DetailedMatchResult): result is EnhancedMatchResult {
+  return 'detailedReasons' in result && Array.isArray(result.detailedReasons);
+}
+
 export function ResultCard({ result, rank }: ResultCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const instId = result.institutionId as InstitutionId;
   const colors = INSTITUTION_COLORS[instId] || INSTITUTION_COLORS.kosmes;
   const instName = INSTITUTION_NAMES[instId] || result.institutionId;
   const level = LEVEL_COLORS[result.level];
+
+  // EnhancedMatchResult 여부 확인
+  const hasDetailedReasons = isEnhancedResult(result) && result.detailedReasons?.length > 0;
+  const hasAiJudgment = isEnhancedResult(result) && result.aiJudgment;
 
   return (
     <div
@@ -145,8 +163,173 @@ export function ResultCard({ result, rank }: ResultCardProps) {
             </div>
           )}
 
-          {/* 적격 사유 */}
-          {result.eligibilityReasons.length > 0 && (
+          {/* ============================================ */}
+          {/* 고도화된 적격 사유 (3사 통합) */}
+          {/* ============================================ */}
+          {hasDetailedReasons && (
+            <div className="mt-4 space-y-4">
+              {(result as EnhancedMatchResult).detailedReasons.map((category) => (
+                <div key={category.category}>
+                  {/* 카테고리 헤더 */}
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="text-sm">{category.icon}</span>
+                    <span className="text-xs font-semibold text-slate-700">
+                      {category.categoryLabel}
+                    </span>
+                  </div>
+
+                  {/* 사유 목록 */}
+                  <ul className="space-y-2.5">
+                    {category.reasons.map((reason, idx) => {
+                      const zoneDisplay = SAFETY_ZONE_DISPLAY[reason.safetyZone];
+                      const impactDisplay = IMPACT_LEVEL_DISPLAY[reason.impactLevel];
+
+                      return (
+                        <li key={idx} className="text-xs">
+                          <div className="flex items-start gap-2">
+                            {/* 여유도 아이콘 (GPT) */}
+                            <span className={`flex-shrink-0 ${zoneDisplay.color}`}>
+                              {zoneDisplay.icon}
+                            </span>
+
+                            <div className="flex-1 min-w-0">
+                              {/* 필드명 + 값 + 기준 + 태그 */}
+                              <div className="flex items-center flex-wrap gap-1.5">
+                                <span className="font-medium text-slate-700">
+                                  {reason.userValue}
+                                </span>
+                                <span className="text-slate-400">{reason.criterion}</span>
+
+                                {/* 심사 영향도 태그 (GPT) */}
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${impactDisplay.bgColor} ${impactDisplay.textColor}`}
+                                >
+                                  {reason.impactLevel === 'bonus' && reason.impactScore
+                                    ? `${impactDisplay.label} +${reason.impactScore}`
+                                    : impactDisplay.label}
+                                </span>
+                              </div>
+
+                              {/* 여유분 표시 */}
+                              {reason.margin && (
+                                <div className="text-slate-400 mt-0.5">
+                                  → {reason.margin}
+                                </div>
+                              )}
+
+                              {/* 혜택 표시 (Gemini) */}
+                              {reason.benefit && (
+                                <div className="text-emerald-600 mt-0.5">
+                                  → {reason.benefit}
+                                </div>
+                              )}
+
+                              {/* 추가 메모 */}
+                              {reason.note && (
+                                <div className="text-blue-600 mt-0.5">
+                                  → {reason.note}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* ============================================ */}
+          {/* AI 종합 판정 (Gemini + GPT 통합) */}
+          {/* ============================================ */}
+          {hasAiJudgment && (result as EnhancedMatchResult).aiJudgment && (
+            <div className="mt-5 p-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl border border-indigo-100">
+              <h4 className="text-xs font-semibold text-indigo-800 mb-3 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" />
+                AI 종합 판정
+              </h4>
+
+              <div className="space-y-3">
+                {/* 킬러 포인트 */}
+                <div>
+                  <div className="flex items-center gap-1 text-xs font-medium text-indigo-700 mb-0.5">
+                    <TrendingUp className="w-3 h-3" />
+                    킬러 포인트
+                  </div>
+                  <p className="text-xs text-slate-600 pl-4">
+                    "{(result as EnhancedMatchResult).aiJudgment.killerPoint}"
+                  </p>
+                </div>
+
+                {/* 보완 시 혜택 */}
+                <div>
+                  <div className="flex items-center gap-1 text-xs font-medium text-emerald-700 mb-0.5">
+                    <Lightbulb className="w-3 h-3" />
+                    보완 시 혜택
+                  </div>
+                  <p className="text-xs text-slate-600 pl-4">
+                    "{(result as EnhancedMatchResult).aiJudgment.improvementTip}"
+                  </p>
+                </div>
+
+                {/* 탈락 경계 (있을 경우만) */}
+                {(result as EnhancedMatchResult).aiJudgment.riskWarning && (
+                  <div>
+                    <div className="flex items-center gap-1 text-xs font-medium text-amber-700 mb-0.5">
+                      <AlertTriangle className="w-3 h-3" />
+                      탈락 경계
+                    </div>
+                    <p className="text-xs text-slate-600 pl-4">
+                      "{(result as EnhancedMatchResult).aiJudgment.riskWarning}"
+                    </p>
+                  </div>
+                )}
+
+                {/* 실행 가이드 */}
+                <div>
+                  <div className="flex items-center gap-1 text-xs font-medium text-blue-700 mb-0.5">
+                    <Lightbulb className="w-3 h-3" />
+                    실행 가이드
+                  </div>
+                  <p className="text-xs text-slate-600 pl-4">
+                    "{(result as EnhancedMatchResult).aiJudgment.actionGuide}"
+                  </p>
+                </div>
+
+                {/* 점수 산정 근거 */}
+                {(result as EnhancedMatchResult).aiJudgment.scoreBreakdown && (
+                  <div className="mt-3 pt-2 border-t border-indigo-100">
+                    <span className="text-xs text-indigo-600 font-mono">
+                      📊 {(result as EnhancedMatchResult).aiJudgment.scoreBreakdown}
+                    </span>
+                  </div>
+                )}
+
+                {/* 연관 자금 */}
+                {(result as EnhancedMatchResult).aiJudgment.relatedFunds.length > 0 &&
+                  (result as EnhancedMatchResult).aiJudgment.relatedFunds[0] !== '연관 자금 없음' && (
+                  <div className="mt-2 flex items-center flex-wrap gap-2">
+                    <span className="text-xs text-slate-500">🔍 연관 자금:</span>
+                    {(result as EnhancedMatchResult).aiJudgment.relatedFunds.map((fund, i) => (
+                      <span
+                        key={i}
+                        className="text-xs px-2 py-0.5 bg-white rounded-full text-slate-600 border border-slate-200"
+                      >
+                        {fund}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ============================================ */}
+          {/* 기존 적격 사유 (fallback - EnhancedMatchResult가 아닐 때) */}
+          {/* ============================================ */}
+          {!hasDetailedReasons && result.eligibilityReasons.length > 0 && (
             <div className="mt-4">
               <div className="text-xs font-semibold text-emerald-700 mb-2">✓ 적격 사유</div>
               <ul className="space-y-1.5">

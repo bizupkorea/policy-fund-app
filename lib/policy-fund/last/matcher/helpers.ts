@@ -13,6 +13,7 @@ import type {
 } from '../types';
 import { INSTITUTIONS } from '../knowledge-base';
 import { TRACK_LABELS, generateScoreExplanation } from './scorer';
+import { SCORING_CONFIG } from './config';
 
 // ============================================================================
 // 키워드 기반 제외 체크
@@ -95,6 +96,7 @@ export function checkKeywordExclusion(
 
 /**
  * EligibilityResult를 DetailedMatchResult로 변환
+ * - GPT 제안 적용: 초기 점수 95점 Cap (100점은 전용자금 완벽 매칭만)
  */
 export function convertToDetailedMatchResult(
   eligibilityResult: EligibilityResult,
@@ -107,7 +109,12 @@ export function convertToDetailedMatchResult(
       ? 'guarantee'
       : 'general'
   ));
-  const score = eligibilityResult.eligibilityScore;
+
+  // GPT 제안: 95점 Cap 적용 (100점은 전용자금 완벽 매칭 시에만)
+  // eligibilityScore는 50점 기반이므로, 이를 95점 Cap 체계로 변환
+  // 50점 → 기본값, 80점 이상 → 95점으로 정규화
+  const rawScore = eligibilityResult.eligibilityScore;
+  const normalizedScore = Math.min(rawScore, SCORING_CONFIG.scoreCap);
 
   return {
     fundId: eligibilityResult.fundId,
@@ -117,9 +124,9 @@ export function convertToDetailedMatchResult(
     officialUrl: fund?.officialUrl,
     track,
     trackLabel: TRACK_LABELS[track],
-    scoreExplanation: generateScoreExplanation(score, track, eligibilityResult.fundName, 0),
-    score,
-    level: score >= 70 ? 'high' : score >= 40 ? 'medium' : 'low',
+    scoreExplanation: generateScoreExplanation(normalizedScore, track, eligibilityResult.fundName, 0),
+    score: normalizedScore,
+    level: normalizedScore >= 70 ? 'high' : normalizedScore >= 40 ? 'medium' : 'low',
     reasons: eligibilityResult.passedConditions.map(c => c.description),
     warnings: eligibilityResult.warningConditions.map(c => c.description),
     isEligible: eligibilityResult.isEligible,
